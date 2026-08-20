@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mad Libs — Session 5</title>
+<style>
+  :root{
+    --navy:#1F3864; --deep:#16294a; --orange:#ED7D31; --cream:#FBF7F0;
+    --ink:#222222; --code:#0f1b33; --green:#7BD88F; --line:#D6DCE8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background:var(--navy);
+    background-image:radial-gradient(circle at 85% -10%, #27407A 0 22rem, transparent 22rem),
+                     radial-gradient(circle at -5% 105%, #27407A 0 16rem, transparent 16rem);
+    color:var(--ink);
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100%; padding:1.2rem 1rem 2rem;
+  }
+  .kicker{color:var(--orange); font-weight:800; letter-spacing:.28em; font-size:.72rem; text-transform:uppercase; text-align:center; margin-top:.6rem;}
+  h1{font-family:Georgia, Cambria, "Times New Roman", serif; color:#fff; font-size:2rem; text-align:center; margin:.25rem 0 .2rem;}
+  .sub{color:#C9D2E3; font-size:.9rem; text-align:center; margin-bottom:1.1rem;}
+  .card{
+    background:var(--cream); border-radius:1.1rem; width:100%; max-width:26rem;
+    padding:1.3rem 1.2rem 1.4rem; box-shadow:0 14px 40px rgba(0,0,0,.35);
+  }
+  .blank{display:block; margin-bottom:.9rem;}
+  .blank span{display:block; font-size:.78rem; font-weight:700; color:var(--navy); letter-spacing:.06em; text-transform:uppercase; margin-bottom:.3rem;}
+  .blank input{
+    width:100%; padding:.7rem .8rem; font-size:1.05rem; border:2px solid var(--line);
+    border-radius:.6rem; background:#fff; color:var(--ink);
+    font-family:ui-monospace, "Courier New", monospace;
+  }
+  .blank input:focus{outline:3px solid var(--orange); border-color:var(--orange);}
+  button{
+    width:100%; padding:.85rem; font-size:1.05rem; font-weight:800; border:0;
+    border-radius:.7rem; background:var(--orange); color:#fff; cursor:pointer; margin-top:.3rem;
+  }
+  button:focus-visible{outline:3px solid var(--navy);}
+  button.ghost{background:transparent; color:var(--navy); border:2px solid var(--navy); margin-top:.6rem;}
+  .story{
+    font-family:Georgia, Cambria, serif; font-size:1.35rem; line-height:1.55; color:var(--ink);
+    min-height:6.5rem; padding:.2rem .1rem;
+  }
+  .story b{color:var(--orange);}
+  .pywrap{margin-top:1rem; display:none;}
+  .pyhead{font-size:.78rem; font-weight:800; letter-spacing:.1em; color:var(--navy); margin-bottom:.35rem;}
+  pre{
+    background:var(--code); color:#dbe6ff; border-radius:.7rem; padding:.9rem .8rem;
+    font-family:ui-monospace, "Courier New", monospace; font-size:.8rem; line-height:1.7;
+    overflow-x:auto; white-space:pre;
+  }
+  pre .k{color:#8fb8ff;} pre .s{color:var(--green);} pre .u{color:var(--orange); font-weight:700;}
+  .foot{color:#9fb0cf; font-size:.72rem; text-align:center; margin-top:1.2rem; line-height:1.6;}
+  .hidden{display:none;}
+  @media (prefers-reduced-motion: no-preference){
+    .story.reveal{animation:pop .5s ease;}
+    @keyframes pop{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  }
+</style>
+</head>
+<body>
+  <div class="kicker">Session 5 &middot; input() &amp; f-strings</div>
+  <h1>Mad Libs</h1>
+  <p class="sub">Give Python four words. Regret nothing.</p>
+
+  <div class="card" id="formCard">
+    <label class="blank"><span>A name (yours? your friend's?)</span>
+      <input id="w_name" type="text" placeholder="Aisha" autocomplete="off"></label>
+    <label class="blank"><span>An animal</span>
+      <input id="w_animal" type="text" placeholder="camel" autocomplete="off"></label>
+    <label class="blank"><span>A place</span>
+      <input id="w_place" type="text" placeholder="the library" autocomplete="off"></label>
+    <label class="blank"><span>A number</span>
+      <input id="w_num" type="number" placeholder="47" autocomplete="off"></label>
+    <button id="tell">Tell the story</button>
+  </div>
+
+  <div class="card hidden" id="storyCard">
+    <p class="story" id="story"></p>
+    <div class="pywrap" id="pywrap">
+      <div class="pyhead">THE PYTHON BEHIND IT</div>
+      <pre id="pycode"></pre>
+    </div>
+    <button id="again">Play again</button>
+    <button class="ghost" id="showpy">See the Python &#128013;</button>
+  </div>
+
+  <p class="foot">Everything here is input() + one f-string.<br>
+  Computational Thinking with Programming &middot; 2026CSAE100 &middot; Bennett University</p>
+
+<script>
+(function(){
+  var stories = [
+    {t:"{name} rode a {animal} to {place}, carrying {num} samosas for the whole class.",
+     p:"print(f'{name} rode a {animal} to {place}, carrying {num} samosas.')"},
+    {t:"Breaking news from {place}: {name} has trained {num} {animal}s to submit assignments on time.",
+     p:"print(f'Breaking news from {place}: {name} trained {num} {animal}s!')"},
+    {t:"{name}'s startup delivers {num} cups of chai to {place} — by {animal}. Investors are confused but impressed.",
+     p:"print(f'{name} delivers {num} chais to {place} by {animal}.')"},
+    {t:"Attendance report: {name} reached {place} on a {animal}, only {num} minutes late. A new record.",
+     p:"print(f'{name} reached {place} on a {animal}, {num} min late.')"}
+  ];
+  var idx = -1, vals = null;
+  var $ = function(id){return document.getElementById(id);};
+
+  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+  function fill(template, bold){
+    var out = template;
+    var keys = ["name","animal","place","num"];
+    for (var i=0;i<keys.length;i++){
+      var k = keys[i];
+      var v = esc(vals[k]);
+      out = out.split("{"+k+"}").join(bold ? "<b>"+v+"</b>" : v);
+    }
+    return out;
+  }
+
+  function pyView(template){
+    var lines = [];
+    lines.push('<span class="k">name</span>   = input(<span class="s">\'A name: \'</span>)      <span style="color:#7a8db3"># you typed: <span class="u">'+esc(vals.name)+'</span></span>');
+    lines.push('<span class="k">animal</span> = input(<span class="s">\'An animal: \'</span>)   <span style="color:#7a8db3"># <span class="u">'+esc(vals.animal)+'</span></span>');
+    lines.push('<span class="k">place</span>  = input(<span class="s">\'A place: \'</span>)     <span style="color:#7a8db3"># <span class="u">'+esc(vals.place)+'</span></span>');
+    lines.push('<span class="k">num</span>    = input(<span class="s">\'A number: \'</span>)    <span style="color:#7a8db3"># <span class="u">'+esc(vals.num)+'</span></span>');
+    lines.push('');
+    lines.push(esc(template.p));
+    return lines.join("\n");
+  }
+
+  $("tell").addEventListener("click", function(){
+    vals = {
+      name:   $("w_name").value.trim()   || "Aisha",
+      animal: $("w_animal").value.trim() || "camel",
+      place:  $("w_place").value.trim()  || "the library",
+      num:    $("w_num").value.trim()    || "47"
+    };
+    idx = (idx + 1) % stories.length;
+    var st = stories[idx];
+    var el = $("story");
+    el.innerHTML = fill(st.t, true);
+    el.classList.remove("reveal"); void el.offsetWidth; el.classList.add("reveal");
+    $("pycode").innerHTML = pyView(st);
+    $("pywrap").style.display = "none";
+    $("formCard").classList.add("hidden");
+    $("storyCard").classList.remove("hidden");
+  });
+
+  $("again").addEventListener("click", function(){
+    $("storyCard").classList.add("hidden");
+    $("formCard").classList.remove("hidden");
+    $("w_name").focus();
+  });
+
+  $("showpy").addEventListener("click", function(){
+    var w = $("pywrap");
+    w.style.display = (w.style.display === "block") ? "none" : "block";
+  });
+})();
+</script>
+</body>
+</html>

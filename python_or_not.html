@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python or Not? — Session 2</title>
+<style>
+  :root{
+    --navy:#1F3864; --deep:#16294a; --orange:#ED7D31; --cream:#FBF7F0;
+    --ink:#222; --line:#D6DCE8; --green:#2E7D32; --red:#C0392B; --gtint:#EDF5EE; --rtint:#FBEDEA;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--navy);
+    background-image:radial-gradient(circle at 85% -10%, #27407A 0 20rem, transparent 20rem);
+    color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:1.2rem 1rem 2rem;
+  }
+  .kicker{color:var(--orange); font-weight:800; letter-spacing:.28em; font-size:.72rem; text-transform:uppercase; margin-top:.6rem;}
+  h1{font-family:Georgia,Cambria,serif; font-size:2rem; margin:.25rem 0 .2rem; text-align:center;}
+  .sub{color:#C9D2E3; font-size:.9rem; text-align:center; margin-bottom:1rem;}
+  .card{background:var(--cream); color:var(--ink); border-radius:1.1rem; width:100%; max-width:26rem;
+        padding:1.3rem 1.2rem 1.4rem; box-shadow:0 14px 40px rgba(0,0,0,.4);}
+  .round{font-size:.75rem; font-weight:800; letter-spacing:.12em; color:var(--orange); text-transform:uppercase;}
+  .app{font-family:Georgia,serif; font-size:2rem; font-weight:bold; color:var(--navy); margin:.35rem 0 .2rem;}
+  .hint{font-size:.92rem; color:#5b667c; min-height:2.6rem; line-height:1.5;}
+  .btns{display:flex; gap:.7rem; margin-top:1rem;}
+  button{flex:1; padding:.85rem .4rem; font-size:1rem; font-weight:800; border:0; border-radius:.7rem; cursor:pointer; color:#fff;}
+  .yes{background:var(--green);} .no{background:var(--red);}
+  button:focus-visible{outline:3px solid var(--navy);}
+  .verdict{margin-top:1rem; border-radius:.8rem; padding:.8rem .9rem; display:none; line-height:1.5; font-size:.95rem;}
+  .verdict.ok{display:block; background:var(--gtint); border:2px solid var(--green); color:var(--ink);}
+  .verdict.bad{display:block; background:var(--rtint); border:2px solid var(--red); color:var(--ink);}
+  .verdict b{color:var(--navy);}
+  .next{width:100%; margin-top:.8rem; background:var(--orange); display:none;}
+  .score{font-size:.85rem; font-weight:800; color:var(--navy); text-align:right; margin-top:.6rem;}
+  .final .app{font-size:1.7rem;}
+  .foot{color:#9fb0cf; font-size:.72rem; text-align:center; margin-top:1.2rem; line-height:1.6;}
+  @media (prefers-reduced-motion: no-preference){
+    .card.pop{animation:pop .35s ease;}
+    @keyframes pop{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  }
+</style>
+</head>
+<body>
+  <div class="kicker">Session 2 &middot; Why Python?</div>
+  <h1>Python or Not?</h1>
+  <p class="sub">Eight famous products. Guess which ones run Python.</p>
+
+  <div class="card" id="game">
+    <div class="round" id="round"></div>
+    <div class="app" id="app"></div>
+    <div class="hint" id="hint"></div>
+    <div class="btns" id="btns">
+      <button class="yes" id="byes">Python inside</button>
+      <button class="no" id="bno">Not Python</button>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <button class="next" id="next">Next</button>
+    <div class="score" id="score"></div>
+  </div>
+
+  <p class="foot">"Python inside" = Python plays a major, well-documented role in it.<br>
+  Computational Thinking with Programming &middot; 2026CSAE100 &middot; Bennett University</p>
+
+<script>
+(function(){
+  var R = [
+    {app:"Instagram", hint:"2+ billion users. Photos, reels, DMs.", py:true,
+     fact:"Instagram's backend runs on <b>Django</b> \u2014 a Python web framework. One of the largest Django deployments in the world."},
+    {app:"WhatsApp", hint:"Messages for a quarter of the planet.", py:false,
+     fact:"WhatsApp's backend is famously built on <b>Erlang</b> \u2014 chosen for handling millions of connections at once."},
+    {app:"YouTube", hint:"500+ hours uploaded every minute.", py:true,
+     fact:"YouTube has used <b>Python</b> heavily since its earliest days at Google \u2014 across serving, tooling, and data."},
+    {app:"Minecraft (Java Edition)", hint:"The best-selling game of all time.", py:false,
+     fact:"It is called Java Edition for a reason \u2014 the game is written in <b>Java</b>."},
+    {app:"Spotify", hint:"Your Monday playlist knows you too well.", py:true,
+     fact:"Spotify uses <b>Python</b> across backend services and the data analysis behind recommendations."},
+    {app:"Adobe Photoshop", hint:"Thirty years of edited photos.", py:false,
+     fact:"Photoshop's core is <b>C++</b> \u2014 heavy graphics engines need every drop of raw speed."},
+    {app:"Netflix", hint:"Decides what 300 million people watch next.", py:true,
+     fact:"Netflix runs <b>Python</b> across its data platform, machine learning, and operations tooling."},
+    {app:"Dropbox", hint:"Your files, everywhere since 2008.", py:true,
+     fact:"Dropbox was built largely in <b>Python</b> \u2014 Python's creator, Guido van Rossum, worked there for years."},
+  ];
+  var i = 0, score = 0, answered = false;
+  var $ = function(id){return document.getElementById(id);};
+
+  function show(){
+    answered = false;
+    var r = R[i];
+    $("round").textContent = "Round " + (i+1) + " of " + R.length;
+    $("app").textContent = r.app;
+    $("hint").textContent = r.hint;
+    $("verdict").className = "verdict";
+    $("verdict").innerHTML = "";
+    $("next").style.display = "none";
+    $("btns").style.display = "flex";
+    $("score").textContent = "Score: " + score;
+    var c = $("game"); c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop");
+  }
+  function answer(guessPy){
+    if (answered) return;
+    answered = true;
+    var r = R[i], right = (guessPy === r.py);
+    if (right) score++;
+    var v = $("verdict");
+    v.className = "verdict " + (right ? "ok" : "bad");
+    v.innerHTML = (right ? "\u2713 Correct. " : "\u2717 Not quite. ") + r.fact;
+    $("btns").style.display = "none";
+    $("next").style.display = "block";
+    $("next").textContent = (i < R.length-1) ? "Next" : "See my result";
+    $("score").textContent = "Score: " + score;
+  }
+  function finish(){
+    var g = $("game");
+    g.classList.add("final");
+    var verdictLine =
+      score >= 7 ? "You already think like a tech-stack detective." :
+      score >= 5 ? "Solid \u2014 you spot Python better than most first-years." :
+                   "Every miss here is a story \u2014 you will know them all by the end of this course.";
+    g.innerHTML = '<div class="round">Final score</div>' +
+      '<div class="app">' + score + ' / ' + R.length + '</div>' +
+      '<div class="hint">' + verdictLine + '</div>' +
+      '<div class="hint" style="margin-top:.6rem">The pattern: Python dominates <b>backends, data and AI</b>. Speed-critical engines (games, graphics) reach for C++ or Java \u2014 and that is exactly what today\u2019s session explains.</div>' +
+      '<button class="next" style="display:block" id="replay">Play again</button>';
+    document.getElementById("replay").addEventListener("click", function(){ location.reload(); });
+  }
+  $("byes").addEventListener("click", function(){ answer(true); });
+  $("bno").addEventListener("click", function(){ answer(false); });
+  $("next").addEventListener("click", function(){
+    if (i < R.length-1){ i++; show(); } else { finish(); }
+  });
+  show();
+})();
+</script>
+</body>
+</html>

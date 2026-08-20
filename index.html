@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026CSAE100 — Class Games</title>
+<style>
+  :root{--navy:#1F3864;--orange:#ED7D31;--orange-dark:#C55A11;--muted:#5A6B87;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--navy); color:#1F3864; padding:28px 16px 48px;
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+    display:flex; justify-content:center;
+  }
+  .wrap{width:100%; max-width:620px;}
+  header{text-align:center; color:#fff; margin-bottom:26px;}
+  .eyebrow{font-size:11px; letter-spacing:.22em; font-weight:700; color:var(--orange); text-transform:uppercase; margin-bottom:8px;}
+  h1{font-family:Cambria,Georgia,serif; font-size:34px; margin:0 0 8px;}
+  .sub{color:#C7D2E6; font-size:14px; margin:0;}
+  a.card{
+    display:block; background:#fff; border-radius:14px; padding:20px 22px; margin-bottom:14px;
+    text-decoration:none; color:inherit; box-shadow:0 8px 24px rgba(0,0,0,.22);
+    transition:transform .1s ease;
+  }
+  a.card:hover{transform:translateY(-2px);}
+  .session{font-size:11px; letter-spacing:.16em; font-weight:700; color:var(--orange-dark); text-transform:uppercase;}
+  .name{font-family:Cambria,Georgia,serif; font-size:23px; font-weight:700; margin:5px 0 5px;}
+  .desc{font-size:14px; color:var(--muted); margin:0; line-height:1.45;}
+  .soon{background:rgba(255,255,255,.08); box-shadow:none; color:#8FA2C0; cursor:default;}
+  .soon .name{color:#C7D2E6;} .soon .desc{color:#8FA2C0;} .soon .session{color:var(--orange);}
+  footer{text-align:center; color:#8FA2C0; font-size:12px; margin-top:26px; line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">2026CSAE100</div>
+    <h1>Class Games</h1>
+    <p class="sub">Computational Thinking with Programming · Bennett University</p>
+  </header>
+
+  <a class="card" href="python-or-not.html">
+    <div class="session">Session 2 · Why Python?</div>
+    <div class="name">Python or Not?</div>
+    <p class="desc">Eight products you use every week. Guess which ones have Python inside.</p>
+  </a>
+
+  <a class="card" href="https://claude.ai/public/artifacts/08015ae9-b8ea-467b-8fae-f7ad1205d852">
+    <div class="session">Session 5 · input() and f-strings</div>
+    <div class="name">Mad Libs</div>
+    <p class="desc">Give it four words and it writes you a story. The whole game is input() and one f-string.</p>
+  </a>
+
+  <a class="card" href="https://claude.ai/public/artifacts/6da17088-289a-4fda-a55f-2995ee5843df">
+    <div class="session">Session 6 · Operators</div>
+    <div class="name">The Mind Reader</div>
+    <p class="desc">Think of any number. It always knows the answer — because of one expression.</p>
+  </a>
+
+  <div class="card soon">
+    <div class="session">Session 7 · Conditionals</div>
+    <div class="name">The Bouncer</div>
+    <p class="desc">Coming soon.</p>
+  </div>
+
+  <footer>
+    Built for 2026CSAE100 · Bennett University<br>
+    Each game is one idea from that session, playable in a browser.
+  </footer>
+</div>
+</body>
+</html>

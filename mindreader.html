@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Mind Reader — Session 6</title>
+<style>
+  :root{
+    --bg:#101E38; --navy:#1F3864; --orange:#ED7D31; --glow:#FFB477;
+    --cream:#FBF7F0; --ink:#222; --code:#0f1b33; --green:#7BD88F; --line:#D6DCE8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:-apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background:var(--bg);
+    background-image:radial-gradient(circle at 50% -20%, #27407A 0 20rem, transparent 20rem);
+    color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:1.2rem 1rem 2rem;
+  }
+  .kicker{color:var(--orange); font-weight:800; letter-spacing:.28em; font-size:.72rem; text-transform:uppercase; margin-top:.6rem;}
+  h1{font-family:Georgia, Cambria, serif; font-size:2rem; margin:.25rem 0 .2rem; text-align:center;}
+  .sub{color:#C9D2E3; font-size:.9rem; text-align:center; margin-bottom:1.1rem;}
+  .card{background:var(--cream); color:var(--ink); border-radius:1.1rem; width:100%; max-width:26rem;
+        padding:1.3rem 1.2rem 1.4rem; box-shadow:0 14px 40px rgba(0,0,0,.45);}
+  .prompt{font-family:Georgia, serif; font-size:1.2rem; color:var(--navy); margin-bottom:.9rem; line-height:1.5;}
+  input[type=number]{
+    width:100%; padding:.8rem; font-size:1.5rem; text-align:center; border:2px solid var(--line);
+    border-radius:.7rem; font-family:ui-monospace, "Courier New", monospace; color:var(--navy);
+  }
+  input:focus{outline:3px solid var(--orange); border-color:var(--orange);}
+  button{width:100%; padding:.85rem; font-size:1.05rem; font-weight:800; border:0; border-radius:.7rem;
+         background:var(--orange); color:#fff; cursor:pointer; margin-top:.8rem;}
+  button:focus-visible{outline:3px solid var(--navy);}
+  button.ghost{background:transparent; color:var(--navy); border:2px solid var(--navy); margin-top:.6rem;}
+  .orb{
+    width:7.5rem; height:7.5rem; border-radius:50%; margin:0 auto 1rem;
+    background:radial-gradient(circle at 35% 30%, #3a5794, var(--navy) 65%);
+    box-shadow:0 0 34px rgba(237,125,49,.45), inset 0 0 26px rgba(255,255,255,.12);
+    display:flex; align-items:center; justify-content:center;
+    font-family:Georgia, serif; font-size:2.6rem; color:var(--glow);
+  }
+  .consult{font-family:Georgia, serif; font-style:italic; color:var(--navy); text-align:center; min-height:1.6rem; margin-bottom:.6rem;}
+  .steps{margin-top:.8rem;}
+  .step{display:flex; justify-content:space-between; gap:.6rem; padding:.5rem .65rem; border-radius:.55rem;
+        background:#fff; border:1.5px solid var(--line); margin-bottom:.45rem;
+        font-family:ui-monospace,"Courier New",monospace; font-size:.86rem; color:var(--ink);}
+  .step em{font-style:normal; color:var(--orange); font-weight:700;}
+  .note{font-size:.83rem; color:#5b667c; line-height:1.55; margin-top:.6rem;}
+  pre{background:var(--code); color:#dbe6ff; border-radius:.7rem; padding:.85rem .8rem; margin-top:.7rem;
+      font-family:ui-monospace,"Courier New",monospace; font-size:.8rem; line-height:1.7; overflow-x:auto;}
+  pre .u{color:var(--orange); font-weight:700;} pre .s{color:var(--green);}
+  .slider{margin-top:.8rem;}
+  .slider label{font-size:.8rem; font-weight:800; letter-spacing:.06em; color:var(--navy); text-transform:uppercase;}
+  .slider input[type=range]{width:100%; accent-color:var(--orange); margin-top:.4rem;}
+  .foot{color:#9fb0cf; font-size:.72rem; text-align:center; margin-top:1.2rem; line-height:1.6;}
+  .hidden{display:none;}
+  @media (prefers-reduced-motion: no-preference){
+    .orb.think{animation:pulse 1s ease infinite;}
+    @keyframes pulse{0%,100%{box-shadow:0 0 22px rgba(237,125,49,.35);} 50%{box-shadow:0 0 46px rgba(237,125,49,.75);}}
+  }
+</style>
+</head>
+<body>
+  <div class="kicker">Session 6 &middot; Operators &amp; Expressions</div>
+  <h1>The Mind Reader</h1>
+  <p class="sub">One expression. It already knows your answer.</p>
+
+  <div class="card" id="askCard">
+    <p class="prompt">Think of any number. Don't tell anyone. Type it here — the spirits are listening.</p>
+    <input id="n" type="number" inputmode="numeric" placeholder="?" aria-label="Your secret number">
+    <button id="go">Consult the spirits</button>
+  </div>
+
+  <div class="card hidden" id="revealCard">
+    <div class="orb" id="orb">&#10047;</div>
+    <p class="consult" id="consult"></p>
+    <div id="afterReveal" class="hidden">
+      <button id="again">Try another number</button>
+      <button class="ghost" id="how">How?! Expose the trick</button>
+    </div>
+    <div id="expose" class="hidden">
+      <div class="steps" id="steps"></div>
+      <p class="note">Your number walks in, gets doubled, padded, halved — and cancels itself out. Only the 5 survives. And it says <b>5.0</b>, not 5, because <b>/</b> always produces a float.</p>
+      <pre>magic = (n * 2 + 10) / 2 - n   <span class="s"># always 5.0</span></pre>
+      <div class="slider">
+        <label>Build your own trick — the spirits should say: <span id="tval">9</span></label>
+        <input type="range" id="target" min="1" max="99" value="9">
+        <pre id="custom"></pre>
+      </div>
+      <button id="again2">Play it on a friend</button>
+    </div>
+  </div>
+
+  <p class="foot">The whole trick is (n * 2 + 10) / 2 - n.<br>
+  Computational Thinking with Programming &middot; 2026CSAE100 &middot; Bennett University</p>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id);};
+  var lastN = null;
+  var lines = ["The spirits are listening...","Carrying the 2...","Dividing the aura...","I see it now..."];
+
+  function reveal(){
+    var raw = $("n").value.trim();
+    var n = parseInt(raw, 10);
+    if (isNaN(n)){ $("n").focus(); return; }
+    lastN = n;
+    $("askCard").classList.add("hidden");
+    $("revealCard").classList.remove("hidden");
+    $("afterReveal").classList.add("hidden");
+    $("expose").classList.add("hidden");
+    var orb = $("orb"); orb.classList.add("think"); orb.textContent = "\u2747";
+    var i = 0;
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function tick(){
+      if (i < lines.length && !reduce){
+        $("consult").textContent = lines[i]; i++;
+        setTimeout(tick, 650);
+      } else {
+        orb.classList.remove("think");
+        orb.textContent = "5.0";
+        $("consult").textContent = "The spirits say... 5.0!";
+        $("afterReveal").classList.remove("hidden");
+        buildSteps(n);
+      }
+    }
+    tick();
+  }
+
+  function buildSteps(n){
+    var a = n*2, b = n*2+10, c = (n*2+10)/2;
+    var html = "";
+    html += '<div class="step"><span>n = '+n+'</span><em>your number</em></div>';
+    html += '<div class="step"><span>n * 2 = '+a+'</span><em>doubled</em></div>';
+    html += '<div class="step"><span>+ 10 = '+b+'</span><em>padded</em></div>';
+    html += '<div class="step"><span>/ 2 = '+c+'</span><em>halved \u2192 n + 5</em></div>';
+    html += '<div class="step"><span>- '+n+' = 5.0</span><em>n cancels out</em></div>';
+    $("steps").innerHTML = html;
+  }
+
+  function customLine(){
+    var t = parseInt($("target").value,10);
+    $("tval").textContent = t;
+    $("custom").innerHTML = 'magic = (n * 2 + <span class="u">'+(2*t)+'</span>) / 2 - n   <span class="s"># always '+t+'.0</span>';
+  }
+
+  $("go").addEventListener("click", reveal);
+  $("n").addEventListener("keydown", function(e){ if(e.key==="Enter") reveal(); });
+  $("again").addEventListener("click", function(){
+    $("revealCard").classList.add("hidden");
+    $("askCard").classList.remove("hidden");
+    $("n").value=""; $("n").focus();
+  });
+  $("again2").addEventListener("click", function(){
+    $("revealCard").classList.add("hidden");
+    $("askCard").classList.remove("hidden");
+    $("n").value=""; $("n").focus();
+  });
+  $("how").addEventListener("click", function(){
+    $("expose").classList.remove("hidden");
+    customLine();
+  });
+  $("target").addEventListener("input", customLine);
+})();
+</script>
+</body>
+</html>
