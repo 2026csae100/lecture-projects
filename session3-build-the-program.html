@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build the Program – Session 3</title>
+<style>
+  :root { --navy:#1B2A4A; --orange:#F28C28; --light:#F4F6FA; --ok:#2E8B57; --bad:#D64545; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: Calibri, Arial, sans-serif; background:var(--navy); color:#fff; display:flex; justify-content:center; }
+  .app { width:100%; max-width:520px; padding:20px 16px 40px; }
+  h1 { font-size:26px; margin:6px 0 2px; }
+  .sub { color:#AFB8C8; margin:0 0 16px; font-size:15px; }
+  .bar { display:flex; justify-content:space-between; font-size:15px; margin-bottom:10px; }
+  .bar b { color:var(--orange); }
+  .slots { background:#0F172A; border-radius:12px; padding:14px; min-height:74px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .pool  { margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; min-height:60px; }
+  .tok { font-family:"Courier New", monospace; font-size:20px; font-weight:bold; padding:10px 14px; border-radius:8px; background:var(--light); color:var(--navy); cursor:pointer; user-select:none; white-space:pre; border:3px solid transparent; }
+  .slots .tok { background:var(--orange); color:#fff; }
+  .hint { color:#AFB8C8; font-size:14px; margin:10px 0 0; }
+  .msg { margin-top:14px; min-height:28px; font-size:18px; font-weight:bold; }
+  .msg.ok { color:#7FD1A0; } .msg.bad { color:#FF8A8A; }
+  button { margin-top:14px; width:100%; padding:14px; font-size:18px; font-weight:bold; border:0; border-radius:10px; background:var(--orange); color:#fff; cursor:pointer; }
+  button.ghost { background:transparent; border:2px solid #AFB8C8; color:#AFB8C8; margin-top:8px; }
+  .done { text-align:center; padding:30px 10px; }
+  .done .big { font-size:54px; color:var(--orange); font-weight:bold; }
+  .task { background:#243456; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:16px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Build the Program</h1>
+  <p class="sub">Tap the pieces in the right order to make a line Python will accept.</p>
+  <div id="game"></div>
+</div>
+<script>
+// Each round: what the line should do, the correct token order.
+var rounds = [
+  { task: 'Show the word Hello on the screen.', tokens: ['print', '(', '"Hello"', ')'] },
+  { task: 'Show:  Hello, Bennett!', tokens: ['print', '(', '"Hello, Bennett!"', ')'] },
+  { task: 'Show the number 4 (let Python do the maths).', tokens: ['print', '(', '2', '+', '2', ')'] },
+  { task: 'Show the text  2 + 2  exactly as written (no maths).', tokens: ['print', '(', '"2 + 2"', ')'] },
+  { task: 'Show two things in one print, separated by a comma.', tokens: ['print', '(', '"Age:"', ',', '18', ')'] }
+];
+var round = 0, chosen = [], pool = [], start = null, times = [], timerId = null;
+
+function shuffle(a) { var b = a.slice(); for (var i = b.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = b[i]; b[i] = b[j]; b[j] = t; } if (b.join('|') === a.join('|')) return shuffle(a); return b; }
+
+function startRound() {
+  chosen = []; pool = shuffle(rounds[round].tokens); start = Date.now();
+  if (timerId) clearInterval(timerId);
+  timerId = setInterval(render, 200);
+  render();
+}
+function pick(i) { chosen.push(pool[i]); pool.splice(i, 1); render(); }
+function unpick(i) { pool.push(chosen[i]); chosen.splice(i, 1); render(); }
+function reset() { pool = pool.concat(chosen); chosen = []; render(); }
+function check() {
+  var msg = document.getElementById('msg');
+  if (pool.length) { msg.className = 'msg bad'; msg.textContent = 'Use every piece – Python needs all of them.'; return; }
+  var ok = chosen.join(' ') === rounds[round].tokens.join(' ');
+  if (ok) {
+    times.push((Date.now() - start) / 1000);
+    clearInterval(timerId);
+    msg.className = 'msg ok'; msg.textContent = 'Correct! Python would run this.';
+    setTimeout(function () { round++; if (round < rounds.length) startRound(); else finish(); }, 900);
+  } else {
+    msg.className = 'msg bad';
+    var firstWrong = chosen.findIndex(function (t, k) { return t !== rounds[round].tokens[k]; });
+    msg.textContent = 'SyntaxError – something is out of place around piece ' + (firstWrong + 1) + '. Try again.';
+  }
+}
+function render() {
+  var r = rounds[round];
+  var secs = start ? ((Date.now() - start) / 1000).toFixed(1) : '0.0';
+  var html = '<div class="bar"><span>Round <b>' + (round + 1) + '</b> of ' + rounds.length + '</span><span>Time <b>' + secs + 's</b></span></div>';
+  html += '<div class="task">' + r.task + '</div>';
+  html += '<div class="slots">' + (chosen.length ? chosen.map(function (t, i) { return '<span class="tok" onclick="unpick(' + i + ')">' + esc(t) + '</span>'; }).join('') : '<span class="hint">Tap pieces below to place them here</span>') + '</div>';
+  html += '<div class="pool">' + pool.map(function (t, i) { return '<span class="tok" onclick="pick(' + i + ')">' + esc(t) + '</span>'; }).join('') + '</div>';
+  html += '<p class="hint">Tap a placed piece to send it back.</p>';
+  html += '<div id="msg" class="msg"></div>';
+  html += '<button onclick="check()">Run it</button><button class="ghost" onclick="reset()">Clear</button>';
+  document.getElementById('game').innerHTML = html;
+}
+function finish() {
+  var total = times.reduce(function (a, b) { return a + b; }, 0).toFixed(1);
+  var best = Math.min.apply(null, times).toFixed(1);
+  document.getElementById('game').innerHTML = '<div class="done"><div>All 5 rounds done</div><div class="big">' + total + 's</div><div>Fastest round: ' + best + 's</div><p style="color:#AFB8C8">Remember this number – your teacher will ask.</p><button onclick="location.reload()">Play again</button></div>';
+}
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+startRound();
+</script>
+</body>
+</html>
