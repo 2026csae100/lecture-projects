@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Bouncer — Lecture 5</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#1F3864;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 14px 30px}
+  .kicker{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#ED7D31;font-weight:bold;margin-top:8px}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:2.2rem;margin:.2rem 0 .3rem}
+  .sub{color:#C9D2E3;font-size:.95rem;margin:0 0 1rem;text-align:center}
+  .rules{background:#3A5284;border-radius:12px;padding:.8rem 1rem;font-size:.95rem;line-height:1.5;max-width:420px;width:100%;margin-bottom:1rem}
+  .rules code{color:#FFD9BC;font-family:'Courier New',monospace}
+  .card{background:#FBF7F0;color:#1F3864;border-radius:18px;padding:1.2rem 1.2rem 1.4rem;max-width:420px;width:100%}
+  .card.pop{animation:pop .25s ease}
+  @keyframes pop{from{transform:scale(.96);opacity:.6}to{transform:scale(1);opacity:1}}
+  .round{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#ED7D31;font-weight:bold}
+  .name{font-family:Georgia,serif;font-size:2rem;font-weight:bold;margin:.3rem 0 .8rem}
+  .attr{display:inline-block;background:#fff;border:2px solid #D6DCE8;border-radius:8px;padding:.35rem .6rem;margin:0 .4rem .5rem 0;font-family:'Courier New',monospace;font-size:.95rem}
+  .btns{display:flex;gap:.8rem;margin-top:1rem}
+  .btns button{flex:1;border:0;border-radius:12px;padding:.9rem .5rem;font-size:1.05rem;font-weight:bold;color:#fff;cursor:pointer}
+  #bin{background:#2E7D32}
+  #bout{background:#C0392B}
+  .verdict{margin-top:1rem;padding:.8rem;border-radius:10px;font-size:.95rem;line-height:1.5;display:none}
+  .verdict.ok{display:block;background:#E8F3E9;border:1.5px solid #2E7D32}
+  .verdict.bad{display:block;background:#FBE9E7;border:1.5px solid #C0392B}
+  .verdict code{font-family:'Courier New',monospace;background:#fff;padding:0 .25rem;border-radius:4px}
+  .next{display:none;width:100%;margin-top:.9rem;border:0;border-radius:12px;padding:.8rem;background:#ED7D31;color:#fff;font-size:1rem;font-weight:bold;cursor:pointer}
+  .score{text-align:right;font-weight:bold;margin-top:.8rem;color:#5B667C;font-size:.9rem}
+  .foot{margin-top:1.2rem;font-size:.8rem;color:#9FB0CF;text-align:center;line-height:1.6;font-family:'Courier New',monospace}
+</style>
+</head>
+<body>
+  <div class="kicker">Lecture 5 · Conditional Statements</div>
+  <h1>The Bouncer</h1>
+  <p class="sub">Tech-fest gate duty. Six visitors. One rule.</p>
+  <div class="rules"><b>Tonight's rule:</b> entry needs <code>age &gt;= 18</code> <b>and</b> (<code>student_id</code> <b>or</b> <code>guest_pass</code>).</div>
+
+  <div class="card" id="game">
+    <div class="round" id="round"></div>
+    <div class="name" id="name"></div>
+    <div id="attrs"></div>
+    <div class="btns" id="btns">
+      <button id="bin">Let them in</button>
+      <button id="bout">Turn away</button>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <button class="next" id="next">Next</button>
+    <div class="score" id="score">Score: 0</div>
+  </div>
+
+  <div class="foot">You are running: if age &gt;= 18 and (student_id or guest_pass)<br>Computational Thinking with Programming · 2026CSAE100 · Bennett University</div>
+
+<script>
+(function(){
+  var V = [
+    {name:"Riya",  chips:["age = 19","student_id = True","guest_pass = False"], yes:true,
+     fact:"19 >= 18 is True. (True or False) is True. True and True — let her in."},
+    {name:"Arjun", chips:["age = 17","student_id = True","guest_pass = False"], yes:false,
+     fact:"17 >= 18 is False. The ID does not matter — <b>and</b> needs both sides True."},
+    {name:"Sana",  chips:["age = 18","student_id = False","guest_pass = True"], yes:true,
+     fact:"18 >= 18 is True — >= includes 18. (False or True) is True. Let her in."},
+    {name:"Dev",   chips:["age = 21","student_id = False","guest_pass = False"], yes:false,
+     fact:"21 >= 18 is True, but (False or False) is False. Old enough, no ID, no pass."},
+    {name:"Meera", chips:["age = 18","student_id = True","guest_pass = True"], yes:true,
+     fact:"18 >= 18 is True and (True or True) is True. Easy one."},
+    {name:"Kabir", chips:["age = 17","student_id = False","guest_pass = True"], yes:false,
+     fact:"The guest pass is real, but 17 >= 18 is False. <b>and</b> fails on the first side."}
+  ];
+  var i=0, score=0, answered=false;
+  function $(id){ return document.getElementById(id); }
+
+  function show(){
+    answered=false;
+    var v=V[i];
+    $("round").textContent = "Visitor "+(i+1)+" of "+V.length;
+    $("name").textContent = v.name;
+    var html="";
+    for (var k=0;k<v.chips.length;k++){ html += '<span class="attr">'+v.chips[k]+'</span>'; }
+    $("attrs").innerHTML = html;
+    var vd=$("verdict"); vd.className="verdict"; vd.innerHTML="";
+    $("next").style.display="none";
+    $("btns").style.display="flex";
+    $("score").textContent="Score: "+score;
+    var c=$("game"); c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop");
+  }
+  function answer(saidYes){
+    if(answered) return; answered=true;
+    var v=V[i], right=(saidYes===v.yes);
+    if(right) score++;
+    var vd=$("verdict");
+    vd.className="verdict "+(right?"ok":"bad");
+    vd.innerHTML=(right?"\u2713 Correct. ":"\u2717 Not quite. ")+v.fact;
+    $("btns").style.display="none";
+    $("next").style.display="block";
+    $("next").textContent=(i<V.length-1)?"Next":"See my result";
+    $("score").textContent="Score: "+score;
+  }
+  function finish(){
+    var frac=score/V.length, line;
+    if (frac>=0.9) line="All six correct.";
+    else if (frac>=0.6) line="Good. The edge cases (17 with an ID, exactly 18) catch most people.";
+    else line="Hard night — but you just checked the same condition six times.";
+    $("game").innerHTML='<div class="round">Final score</div>'+
+      '<div class="name">'+score+' / '+V.length+'</div>'+
+      '<div style="font-size:.95rem;color:#5B667C;line-height:1.55">'+line+'</div>'+
+      '<div style="font-size:.95rem;color:#5B667C;line-height:1.55;margin-top:.6rem">Every decision you made was one line of Python. Today we learn to write it.</div>'+
+      '<button class="next" style="display:block" id="replay">Play again</button>';
+    $("replay").addEventListener("click",function(){ location.reload(); });
+  }
+  $("bin").addEventListener("click",function(){ answer(true); });
+  $("bout").addEventListener("click",function(){ answer(false); });
+  $("next").addEventListener("click",function(){ if(i<V.length-1){ i++; show(); } else finish(); });
+  show();
+})();
+</script>
+</body>
+</html>
