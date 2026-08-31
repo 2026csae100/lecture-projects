@@ -11,6 +11,7 @@ The site is published with GitHub Pages from this repository. Because the reposi
 - **Hub page (all games):** `https://2026csae100.github.io/lecture-projects/`
 - **Python or Not?** — `https://2026csae100.github.io/lecture-projects/python-or-not.html`
 - **The Bouncer** — `https://2026csae100.github.io/lecture-projects/bouncer.html`
+- **Fix the Line** — `https://2026csae100.github.io/lecture-projects/fix-the-line.html`
 
 If the repository has a different name, replace `lecture-projects` with that name. The exact address is shown under **Settings → Pages** in the repository.
 
@@ -26,6 +27,7 @@ If the repository has a different name, replace `lecture-projects` with that nam
 | `madlibs.html` | Mad Libs — four words in, one story out; the whole game is input() and an f-string. |
 | `mindreader.html` | The Mind Reader — think of a number; one expression always knows the answer. |
 | `bouncer.html` | The Bouncer (Lecture 5) — gate duty, six visitors, one if statement. |
+| `fix-the-line.html` | Fix the Line (Lecture 6) — five programs, one bug each, tap the buggy line. |
 
 The hub page links to every file above by these exact names. If a file is missing or named differently (for example `python_or_not.html` with an underscore), its card on the hub page opens a 404. File names are case-sensitive on GitHub Pages.
 
