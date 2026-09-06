@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guess the Output — Lists and Tuples</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#1F3864;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 14px 30px}
+  .kicker{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#ED7D31;font-weight:bold;margin-top:8px}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:2.1rem;margin:.2rem 0 .3rem}
+  .sub{color:#C9D2E3;font-size:.95rem;margin:0 0 1rem;text-align:center}
+  .card{background:#FBF7F0;color:#1F3864;border-radius:18px;padding:1.2rem 1.2rem 1.4rem;max-width:470px;width:100%}
+  .round{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#ED7D31;font-weight:bold}
+  .code{background:#fff;border:2px solid #D6DCE8;border-radius:10px;padding:.7rem .8rem;margin:.6rem 0 .8rem;font-family:'Courier New',monospace;font-size:.95rem;white-space:pre-wrap;color:#1F3864}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:2px solid #D6DCE8;border-radius:10px;padding:.6rem .8rem;margin:0 0 .5rem;font-family:'Courier New',monospace;font-size:.95rem;color:#1F3864;cursor:pointer}
+  .opt:hover{border-color:#ED7D31}
+  .opt.right{background:#E8F3E9;border-color:#2E7D32}
+  .opt.wrong{background:#FBE9E7;border-color:#C0392B}
+  .opt:disabled{cursor:default}
+  .verdict{margin-top:.6rem;padding:.8rem;border-radius:10px;font-size:.92rem;line-height:1.5;display:none}
+  .verdict.ok{display:block;background:#E8F3E9;border:1.5px solid #2E7D32}
+  .verdict.bad{display:block;background:#FBE9E7;border:1.5px solid #C0392B}
+  .verdict code{font-family:'Courier New',monospace;background:#fff;padding:0 .25rem;border-radius:4px}
+  .next{display:none;width:100%;margin-top:.8rem;border:0;border-radius:12px;padding:.8rem;background:#ED7D31;color:#fff;font-size:1rem;font-weight:bold;cursor:pointer}
+  .score{text-align:right;font-weight:bold;margin-top:.8rem;color:#5B667C;font-size:.9rem}
+  .foot{margin-top:1.2rem;font-size:.8rem;color:#9FB0CF;text-align:center;line-height:1.6;font-family:'Courier New',monospace}
+</style>
+</head>
+<body>
+  <div class="kicker">Lists · Nested Lists · Tuples</div>
+  <h1>Guess the Output</h1>
+  <p class="sub">Twelve rounds. Everything from the lecture. Guess before you tap.</p>
+
+  <div class="card" id="game">
+    <div class="round" id="round"></div>
+    <div class="code" id="code"></div>
+    <div id="opts"></div>
+    <div class="verdict" id="verdict"></div>
+    <button class="next" id="next">Next</button>
+    <div class="score" id="score">Score: 0</div>
+  </div>
+
+  <div class="foot">If it changes, it is a list. If it must not, it is a tuple.<br>Computational Thinking with Programming · 2026CSAE100 · Bennett University</div>
+
+<script>
+(function(){
+  var R=[
+    {c:"nums = [2, 4, 6]\nnums.append([8, 9])\nprint(len(nums))",o:["4","5","error"],a:0,
+     w:"append adds ONE item — here that item is a whole list. nums is [2, 4, 6, [8, 9]], length 4. To add each number, use extend."},
+    {c:"nums = [1, 2, 3]\nnums.insert(1, 9)\nprint(nums)",o:["[1, 9, 2, 3]","[9, 1, 2, 3]","[1, 2, 9, 3]"],a:0,
+     w:"insert(1, 9) drops 9 at index 1 and shifts the rest right."},
+    {c:"items = ['a', 'b', 'c', 'b']\nitems.remove('b')\nprint(items)",o:["['a', 'c']","['a', 'c', 'b']","error"],a:1,
+     w:"remove deletes the FIRST match only. The second 'b' stays."},
+    {c:"nums = [3, 1, 2]\nx = nums.pop()\nprint(x, nums)",o:["2 [3, 1]","3 [1, 2]","2 [3, 1, 2]"],a:0,
+     w:"pop() with no index removes AND returns the last item."},
+    {c:"nums = [3, 4, 2, 5, 6]\nprint(nums[1:4:2])",o:["[4, 5]","[4, 2, 5]","[3, 2, 6]"],a:0,
+     w:"Start 1, stop 4 (not included), step 2 — indexes 1 and 3: 4 and 5."},
+    {c:"nums = [3, 1, 2]\nprint(nums.sort())",o:["[1, 2, 3]","None","error"],a:1,
+     w:"sort() changes the list itself and returns None. The classic trap — use sorted() when you want the result back."},
+    {c:"a = [3, 1, 2]\nb = sorted(a)\nprint(a)",o:["[1, 2, 3]","[3, 1, 2]","None"],a:1,
+     w:"sorted() builds a NEW sorted list. The original a is untouched."},
+    {c:"print([1, 2] + [3] * 2)",o:["[1, 2, 3, 3]","[1, 2, 6]","[1, 2, 3, 2]"],a:0,
+     w:"* repeats the list first: [3] * 2 is [3, 3]. Then + joins: [1, 2, 3, 3]."},
+    {c:"a = [1, 2]\nb = a\nb.append(3)\nprint(a)",o:["[1, 2]","[1, 2, 3]","error"],a:1,
+     w:"b = a is a second NAME for the same list, not a copy. Changing b changes a. Use a[:] or a.copy() for a real copy."},
+    {c:"m = [[1, 2], [3, 4]]\nprint(m[1][0])",o:["2","3","[3, 4]"],a:1,
+     w:"First index picks the row [3, 4], second picks the item inside it: 3."},
+    {c:"t = (1, 2, 3, 2)\nprint(t.count(2) + t.index(3))",o:["3","4","5"],a:1,
+     w:"count(2) is 2, index(3) is 2 — together 4. The only two tuple methods."},
+    {c:"t = (1, 2)\nt.append(3)",o:["(1, 2, 3)","AttributeError","(1, 2)"],a:1,
+     w:"Tuples have no append — nothing that changes them exists. AttributeError: 'tuple' object has no attribute 'append'."}
+  ];
+  var i=0,score=0,answered=false;
+  function $(id){return document.getElementById(id);}
+  var LET=['A','B','C'];
+  function show(){
+    answered=false; var r=R[i];
+    $("round").textContent="Round "+(i+1)+" of "+R.length;
+    $("code").textContent=r.c;
+    var box=$("opts"); box.innerHTML="";
+    for(var k=0;k<r.o.length;k++){
+      var b=document.createElement("button"); b.className="opt"; b.textContent=LET[k]+".  "+r.o[k];
+      b.setAttribute("data-k",k); b.addEventListener("click",pick); box.appendChild(b);
+    }
+    var vd=$("verdict"); vd.className="verdict"; vd.innerHTML="";
+    $("next").style.display="none"; $("score").textContent="Score: "+score;
+  }
+  function pick(ev){
+    if(answered) return; answered=true;
+    var k=parseInt(ev.currentTarget.getAttribute("data-k"),10), r=R[i], right=(k===r.a);
+    if(right) score++;
+    var btns=$("opts").children;
+    for(var j=0;j<btns.length;j++){ btns[j].disabled=true; if(j===r.a) btns[j].classList.add("right"); else if(j===k) btns[j].classList.add("wrong"); }
+    var vd=$("verdict"); vd.className="verdict "+(right?"ok":"bad");
+    vd.innerHTML=(right?"\u2713 Correct. ":"\u2717 Not quite. ")+r.w;
+    $("next").style.display="block"; $("next").textContent=(i<R.length-1)?"Next":"See my result";
+    $("score").textContent="Score: "+score;
+  }
+  $("next").addEventListener("click",function(){ if(i<R.length-1){i++;show();} else finish(); });
+  function finish(){
+    var line;
+    if(score>=11) line="Outstanding. You are ready for the marks manager and more.";
+    else if(score>=8) line="Solid. Revisit the rounds you missed — the explanations tell you the rule.";
+    else line="Good practice. Play it once more before the next class — the traps repeat.";
+    $("game").innerHTML='<div class="round">Final score</div>'+
+      '<div style="font-family:Georgia,serif;font-size:2rem;font-weight:bold;margin:.3rem 0">'+score+' / 12</div>'+
+      '<div style="font-size:.95rem;color:#5B667C;line-height:1.55">'+line+'</div>'+
+      '<button class="next" style="display:block" id="replay">Play again</button>';
+    document.getElementById("replay").addEventListener("click",function(){location.reload();});
+  }
+  show();
+})();
+</script>
+</body>
+</html>
