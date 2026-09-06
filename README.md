@@ -12,6 +12,8 @@ The site is published with GitHub Pages from this repository. Because the reposi
 - **Python or Not?** — `https://2026csae100.github.io/lecture-projects/python-or-not.html`
 - **The Bouncer** — `https://2026csae100.github.io/lecture-projects/bouncer.html`
 - **Fix the Line** — `https://2026csae100.github.io/lecture-projects/fix-the-line.html`
+- **Pick the Box** — `https://2026csae100.github.io/lecture-projects/pick-the-box.html`
+- **Guess the Output** — `https://2026csae100.github.io/lecture-projects/guess-the-output.html`
 
 If the repository has a different name, replace `lecture-projects` with that name. The exact address is shown under **Settings → Pages** in the repository.
 
@@ -28,6 +30,8 @@ If the repository has a different name, replace `lecture-projects` with that nam
 | `mindreader.html` | The Mind Reader — think of a number; one expression always knows the answer. |
 | `bouncer.html` | The Bouncer (Lecture 5) — gate duty, six visitors, one if statement. |
 | `fix-the-line.html` | Fix the Line (Lecture 6) — five programs, one bug each, tap the buggy line. |
+| `pick-the-box.html` | Pick the Box (Lecture 7) — indexing and slicing on a list drawn as boxes. |
+| `guess-the-output.html` | Guess the Output (Lecture 7) — twelve programs covering every list and tuple concept. |
 
 The hub page links to every file above by these exact names. If a file is missing or named differently (for example `python_or_not.html` with an underscore), its card on the hub page opens a 404. File names are case-sensitive on GitHub Pages.
 
