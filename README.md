@@ -14,6 +14,7 @@ The site is published with GitHub Pages from this repository. Because the reposi
 - **Fix the Line** — `https://2026csae100.github.io/lecture-projects/fix-the-line.html`
 - **Pick the Box** — `https://2026csae100.github.io/lecture-projects/pick-the-box.html`
 - **Guess the Output** — `https://2026csae100.github.io/lecture-projects/guess-the-output.html`
+- **Slice the Word** — `https://2026csae100.github.io/lecture-projects/slice-the-word.html`
 
 If the repository has a different name, replace `lecture-projects` with that name. The exact address is shown under **Settings → Pages** in the repository.
 
@@ -32,6 +33,7 @@ If the repository has a different name, replace `lecture-projects` with that nam
 | `fix-the-line.html` | Fix the Line (Lecture 6) — five programs, one bug each, tap the buggy line. |
 | `pick-the-box.html` | Pick the Box (Lecture 7) — indexing and slicing on a list drawn as boxes. |
 | `guess-the-output.html` | Guess the Output (Lecture 7) — twelve programs covering every list and tuple concept. |
+| `slice-the-word.html` | Slice the Word (Lecture 8) — string indexing, slicing and immutability on letter boxes. |
 
 The hub page links to every file above by these exact names. If a file is missing or named differently (for example `python_or_not.html` with an underscore), its card on the hub page opens a 404. File names are case-sensitive on GitHub Pages.
 
