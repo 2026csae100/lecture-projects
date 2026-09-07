@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slice the Word — Strings</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#1F3864;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 14px 30px}
+  .kicker{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#ED7D31;font-weight:bold;margin-top:8px}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:2.2rem;margin:.2rem 0 .3rem}
+  .sub{color:#C9D2E3;font-size:.95rem;margin:0 0 1rem;text-align:center}
+  .card{background:#FBF7F0;color:#1F3864;border-radius:18px;padding:1.2rem 1.2rem 1.4rem;max-width:470px;width:100%}
+  .round{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#ED7D31;font-weight:bold}
+  .expr{font-family:'Courier New',monospace;font-size:1.35rem;font-weight:bold;margin:.5rem 0 .8rem;white-space:pre-wrap}
+  .boxes{display:flex;gap:.4rem;justify-content:center;margin:.4rem 0 .2rem}
+  .box{flex:1;max-width:64px;aspect-ratio:1;border:3px solid #D6DCE8;border-radius:10px;background:#fff;font-family:'Courier New',monospace;font-size:1.25rem;font-weight:bold;color:#1F3864;cursor:pointer;padding:0}
+  .box.sel{border-color:#ED7D31;background:#FFF2E8}
+  .box.right{border-color:#2E7D32;background:#E8F3E9}
+  .box.wrong{border-color:#C0392B;background:#FBE9E7}
+  .idx{display:flex;gap:.4rem;justify-content:center;font-size:.78rem;color:#5A6B87}
+  .idx span{flex:1;max-width:64px;text-align:center;font-family:'Courier New',monospace}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:2px solid #D6DCE8;border-radius:10px;padding:.55rem .8rem;margin:0 0 .5rem;font-family:'Courier New',monospace;font-size:.95rem;color:#1F3864;cursor:pointer}
+  .opt:hover{border-color:#ED7D31}
+  .opt.right{background:#E8F3E9;border-color:#2E7D32}
+  .opt.wrong{background:#FBE9E7;border-color:#C0392B}
+  .submit{display:none;width:100%;margin-top:.9rem;border:0;border-radius:12px;padding:.75rem;background:#1F3864;color:#fff;font-size:1rem;font-weight:bold;cursor:pointer}
+  .verdict{margin-top:.8rem;padding:.8rem;border-radius:10px;font-size:.93rem;line-height:1.5;display:none}
+  .verdict.ok{display:block;background:#E8F3E9;border:1.5px solid #2E7D32}
+  .verdict.bad{display:block;background:#FBE9E7;border:1.5px solid #C0392B}
+  .verdict code{font-family:'Courier New',monospace;background:#fff;padding:0 .25rem;border-radius:4px}
+  .next{display:none;width:100%;margin-top:.8rem;border:0;border-radius:12px;padding:.8rem;background:#ED7D31;color:#fff;font-size:1rem;font-weight:bold;cursor:pointer}
+  .score{text-align:right;font-weight:bold;margin-top:.8rem;color:#5B667C;font-size:.9rem}
+  .foot{margin-top:1.2rem;font-size:.8rem;color:#9FB0CF;text-align:center;line-height:1.6;font-family:'Courier New',monospace}
+</style>
+</head>
+<body>
+  <div class="kicker">Lecture 8 · Strings</div>
+  <h1>Slice the Word</h1>
+  <p class="sub">s = 'PYTHON' — tap the letters, or pick the output. Ten rounds.</p>
+
+  <div class="card" id="game">
+    <div class="round" id="round"></div>
+    <div class="expr" id="expr"></div>
+    <div class="boxes" id="boxes"></div>
+    <div class="idx" id="posidx"></div>
+    <div class="idx" id="negidx"></div>
+    <div id="opts"></div>
+    <button class="submit" id="submit">Check my letters</button>
+    <div class="verdict" id="verdict"></div>
+    <button class="next" id="next">Next</button>
+    <div class="score" id="score">Score: 0</div>
+  </div>
+
+  <div class="foot">Index 0 is first. -1 is last. The stop is never included.<br>Computational Thinking with Programming · 2026CSAE100 · Bennett University</div>
+
+<script>
+(function(){
+  var L='PYTHON'.split('');
+  var R=[
+    {kind:"tap",expr:"s[0]  ->  ?",ans:[0],multi:false,w:"Index 0 is the FIRST letter: <code>'P'</code>."},
+    {kind:"tap",expr:"s[3]  ->  ?",ans:[3],multi:false,w:"0, 1, 2, 3 — the fourth letter: <code>'H'</code>."},
+    {kind:"tap",expr:"s[-1]  ->  ?",ans:[5],multi:false,w:"-1 is always the last letter: <code>'N'</code>."},
+    {kind:"tap",expr:"s[-5]  ->  ?",ans:[1],multi:false,w:"Count back from the end: -1 N, -2 O, -3 H, -4 T, -5 <code>'Y'</code>."},
+    {kind:"tap",expr:"s[1:4]  ->  ?  (tap all)",ans:[1,2,3],multi:true,w:"Start 1 included, stop 4 not: <code>'YTH'</code>."},
+    {kind:"tap",expr:"s[:2]  ->  ?  (tap all)",ans:[0,1],multi:true,w:"No start means from the beginning; stop 2 not included: <code>'PY'</code>."},
+    {kind:"tap",expr:"s[::2]  ->  ?  (tap all)",ans:[0,2,4],multi:true,w:"Every second letter from the start: <code>'PTO'</code>."},
+    {kind:"mcq",expr:"len(s) and s[len(s) - 1]",o:["6 and 'N'","6 and IndexError","5 and 'N'"],a:0,w:"len is 6; the last index is len - 1 = 5, which is <code>'N'</code>. s[6] would be the IndexError."},
+    {kind:"mcq",expr:"s[0] = 'J'",o:["'JYTHON'","TypeError","'J'"],a:1,w:"Strings are immutable — no assignment into an index. Build a new one: <code>'J' + s[1:]</code>."},
+    {kind:"mcq",expr:"s[::-1]",o:["'NOHTYP'","'PYTHON'","error"],a:0,w:"Step -1 walks the string backwards — a reversed COPY. s itself is unchanged."}
+  ];
+  var i=0,score=0,answered=false,sel=[];
+  function $(id){return document.getElementById(id);}
+  var LET=['A','B','C'];
+  function show(){
+    answered=false; sel=[];
+    var r=R[i];
+    $("round").textContent="Round "+(i+1)+" of "+R.length;
+    $("expr").textContent=r.expr;
+    var bx=$("boxes"),op=$("opts");
+    bx.innerHTML=""; op.innerHTML=""; $("posidx").innerHTML=""; $("negidx").innerHTML="";
+    if(r.kind==="tap"){
+      for(var k=0;k<L.length;k++){
+        var b=document.createElement("button"); b.className="box"; b.textContent=L[k];
+        b.setAttribute("data-k",k); b.addEventListener("click",tap); bx.appendChild(b);
+      }
+      var pos="",neg="";
+      for(var k2=0;k2<6;k2++){pos+="<span>"+k2+"</span>";neg+="<span>"+(k2-6)+"</span>";}
+      $("posidx").innerHTML=pos; $("negidx").innerHTML=neg;
+      $("submit").style.display=r.multi?"block":"none";
+    } else {
+      for(var m=0;m<r.o.length;m++){
+        var ob=document.createElement("button"); ob.className="opt"; ob.textContent=LET[m]+".  "+r.o[m];
+        ob.setAttribute("data-k",m); ob.addEventListener("click",pickOpt); op.appendChild(ob);
+      }
+      $("submit").style.display="none";
+    }
+    var vd=$("verdict"); vd.className="verdict"; vd.innerHTML="";
+    $("next").style.display="none"; $("score").textContent="Score: "+score;
+  }
+  function tap(ev){
+    if(answered) return;
+    var k=parseInt(ev.currentTarget.getAttribute("data-k"),10), r=R[i];
+    if(!r.multi){ finishTap([k]); return; }
+    var p=sel.indexOf(k);
+    if(p>=0){ sel.splice(p,1); ev.currentTarget.classList.remove("sel"); }
+    else { sel.push(k); ev.currentTarget.classList.add("sel"); }
+  }
+  function finishTap(chosen){
+    answered=true; var r=R[i];
+    var right=chosen.length===r.ans.length && r.ans.every(function(x){return chosen.indexOf(x)>=0;});
+    if(right) score++;
+    var btns=$("boxes").children;
+    for(var j=0;j<btns.length;j++){
+      btns[j].disabled=true; btns[j].classList.remove("sel");
+      if(r.ans.indexOf(j)>=0) btns[j].classList.add("right");
+      else if(chosen.indexOf(j)>=0) btns[j].classList.add("wrong");
+    }
+    verdict(right,r.w);
+  }
+  function pickOpt(ev){
+    if(answered) return; answered=true;
+    var k=parseInt(ev.currentTarget.getAttribute("data-k"),10), r=R[i], right=(k===r.a);
+    if(right) score++;
+    var btns=$("opts").children;
+    for(var j=0;j<btns.length;j++){ btns[j].disabled=true; if(j===r.a) btns[j].classList.add("right"); else if(j===k) btns[j].classList.add("wrong"); }
+    verdict(right,r.w);
+  }
+  function verdict(right,w){
+    var vd=$("verdict"); vd.className="verdict "+(right?"ok":"bad");
+    vd.innerHTML=(right?"\u2713 Correct. ":"\u2717 Not quite. ")+w;
+    $("submit").style.display="none";
+    $("next").style.display="block"; $("next").textContent=(i<R.length-1)?"Next":"See my result";
+    $("score").textContent="Score: "+score;
+  }
+  $("submit").addEventListener("click",function(){ if(!answered) finishTap(sel.slice()); });
+  $("next").addEventListener("click",function(){ if(i<R.length-1){i++;show();} else finish(); });
+  function finish(){
+    var line;
+    if(score>=9) line="Excellent. Indexes, negatives, slices and immutability — all yours.";
+    else if(score>=7) line="Good. The negative counts and the slice stop are the usual traps.";
+    else line="Keep at it: 0 is first, -1 is last, the stop is never included, and a string never changes.";
+    $("game").innerHTML='<div class="round">Final score</div>'+
+      '<div style="font-family:Georgia,serif;font-size:2rem;font-weight:bold;margin:.3rem 0">'+score+' / 10</div>'+
+      '<div style="font-size:.95rem;color:#5B667C;line-height:1.55">'+line+'</div>'+
+      '<button class="next" style="display:block" id="replay">Play again</button>';
+    document.getElementById("replay").addEventListener("click",function(){location.reload();});
+  }
+  show();
+})();
+</script>
+</body>
+</html>
