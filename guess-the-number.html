@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess the Number — Lecture 9</title>
+<style>
+  :root { --navy:#1F3864; --orange:#ED7D31; --cream:#FAF5EC; --ink:#1F3864; --grey:#96A0B4; --bord:#D8DCE6; }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Arial, sans-serif; }
+  body { background:var(--navy); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 40px; color:#fff; }
+  .tag { color:var(--orange); font-weight:700; letter-spacing:1px; font-size:14px; margin-top:12px; }
+  h1 { font-size:34px; margin:6px 0 4px; }
+  .sub { color:#C8D2E6; font-size:15px; margin-bottom:20px; }
+  .card { background:var(--cream); color:var(--ink); border-radius:22px; padding:22px 20px 26px; width:100%; max-width:420px; }
+  .round { color:var(--orange); font-weight:700; letter-spacing:1px; font-size:14px; }
+  .range { color:#5A6478; margin:8px 0 14px; font-size:15px; }
+  .hist { margin-bottom:14px; }
+  .hrow { display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+  .hguess { background:#fff; border:2px solid var(--bord); border-radius:10px; padding:8px 14px; font-family:'Courier New',monospace; font-weight:700; font-size:18px; min-width:70px; text-align:center; }
+  .hhint { color:var(--orange); font-family:'Courier New',monospace; font-weight:700; font-size:17px; }
+  input[type=number] { width:100%; padding:14px; font-size:18px; border:3px solid var(--orange); border-radius:12px; background:#fff; color:var(--ink); outline:none; }
+  button { width:100%; margin-top:12px; padding:14px; font-size:17px; font-weight:700; color:#fff; background:var(--orange); border:none; border-radius:12px; cursor:pointer; }
+  button:active { transform:scale(.98); }
+  .meta { margin-top:14px; font-weight:700; color:#5A6478; font-size:15px; }
+  .end { text-align:center; padding:10px 0; }
+  .end .big { font-size:40px; margin:6px 0; }
+  .end h2 { font-size:24px; margin-bottom:6px; }
+  .end p { color:#5A6478; margin:8px 0 16px; font-size:15px; line-height:1.5; }
+  .code { background:#fff; border:2px solid var(--bord); border-radius:12px; padding:12px 14px; text-align:left; font-family:'Courier New',monospace; font-size:13px; line-height:1.55; margin:12px 0; white-space:pre; overflow-x:auto; }
+  .foot { margin-top:22px; text-align:center; color:#C8D2E6; font-size:14px; }
+  .foot .small { color:#96A6C8; font-size:13px; margin-top:4px; }
+  .shake { animation:sh .3s; }
+  @keyframes sh { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+</style>
+</head>
+<body>
+  <div class="tag">LECTURE 9 &middot; THE WHILE LOOP</div>
+  <h1>Guess the Number</h1>
+  <div class="sub">Find my number in 7 guesses or fewer.</div>
+
+  <div class="card" id="card">
+    <div id="play">
+      <div class="round" id="roundLbl">GUESS 1 OF 7</div>
+      <div class="range" id="rangeLbl">Range left:&nbsp; 1 &ndash; 100</div>
+      <div class="hist" id="hist"></div>
+      <input type="number" id="guessIn" min="1" max="100" placeholder="Your guess (1&ndash;100)" inputmode="numeric">
+      <button id="goBtn">Guess</button>
+      <div class="meta" id="usedLbl">Guesses used: 0</div>
+    </div>
+    <div id="end" class="end" style="display:none"></div>
+  </div>
+
+  <div class="foot">The loop stops when you find it<div class="small">2026CSAE100 &middot; Bennett University</div></div>
+
+<script>
+var secret, tries, lo, hi, over;
+var MAX = 7;
+
+function reset() {
+  secret = Math.floor(Math.random() * 100) + 1;
+  tries = 0; lo = 1; hi = 100; over = false;
+  document.getElementById('hist').innerHTML = '';
+  document.getElementById('play').style.display = 'block';
+  document.getElementById('end').style.display = 'none';
+  document.getElementById('guessIn').value = '';
+  updateLabels();
+  document.getElementById('guessIn').focus();
+}
+
+function updateLabels() {
+  var next = tries + 1; if (next > MAX) next = MAX;
+  document.getElementById('roundLbl').textContent = 'GUESS ' + next + ' OF ' + MAX;
+  document.getElementById('rangeLbl').innerHTML = 'Range left:&nbsp; ' + lo + ' &ndash; ' + hi;
+  document.getElementById('usedLbl').textContent = 'Guesses used: ' + tries;
+}
+
+function addRow(g, hint) {
+  var row = document.createElement('div');
+  row.className = 'hrow';
+  row.innerHTML = '<div class="hguess">' + g + '</div><div class="hhint">-&gt;&nbsp; ' + hint + '</div>';
+  document.getElementById('hist').appendChild(row);
+}
+
+function finish(won) {
+  over = true;
+  var e = document.getElementById('end');
+  var codeBlock = '<div class="code">secret = ' + secret + '\nguess = 0\nwhile guess != secret:\n    guess = int(input())\n# the loop ran ' + tries + ' time' + (tries === 1 ? '' : 's') + '<\/div>';
+  if (won) {
+    var msg;
+    if (tries <= 5) { msg = 'Sharp guessing &mdash; you cut the range in half each time.'; }
+    else { msg = 'Got there! Next time try guessing the middle of the range.'; }
+    e.innerHTML = '<div class="big">&#127881;</div><h2>Got it in ' + tries + ' guess' + (tries === 1 ? '' : 'es') + '!<\/h2><p>' + msg + ' Remember this number &mdash; it comes back in class today.<\/p>' + codeBlock + '<button onclick="reset()">Play again<\/button>';
+  } else {
+    e.innerHTML = '<div class="big">&#128683;</div><h2>Out of guesses!<\/h2><p>My number was <b>' + secret + '<\/b>. Tip: guess the middle of the range every time and 7 is always enough.<\/p>' + codeBlock + '<button onclick="reset()">Play again<\/button>';
+  }
+  document.getElementById('play').style.display = 'none';
+  e.style.display = 'block';
+}
+
+function go() {
+  if (over) { return; }
+  var inp = document.getElementById('guessIn');
+  var g = parseInt(inp.value, 10);
+  if (isNaN(g) || g < 1 || g > 100) {
+    inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
+    return;
+  }
+  tries = tries + 1;
+  if (g === secret) { addRow(g, 'CORRECT'); finish(true); return; }
+  if (g < secret) {
+    addRow(g, 'HIGHER');
+    if (g + 1 > lo) { lo = g + 1; }
+  } else {
+    addRow(g, 'LOWER');
+    if (g - 1 < hi) { hi = g - 1; }
+  }
+  if (tries >= MAX) { finish(false); return; }
+  inp.value = '';
+  updateLabels();
+  inp.focus();
+}
+
+document.getElementById('goBtn').addEventListener('click', go);
+document.getElementById('guessIn').addEventListener('keydown', function (ev) {
+  if (ev.key === 'Enter') { go(); }
+});
+reset();
+</script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Range Finder — Lecture 10</title>
+<style>
+  :root { --navy:#1F3864; --orange:#ED7D31; --cream:#FAF5EC; --ink:#1F3864; --bord:#D8DCE6; --ot:#FDF1E4; --good:#2E7D32; --bad:#C62828; }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Arial, sans-serif; }
+  body { background:var(--navy); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 40px; color:#fff; }
+  .tag { color:var(--orange); font-weight:700; letter-spacing:1px; font-size:14px; margin-top:12px; }
+  h1 { font-size:34px; margin:6px 0 4px; }
+  .sub { color:#C8D2E6; font-size:15px; margin-bottom:20px; }
+  .card { background:var(--cream); color:var(--ink); border-radius:22px; padding:22px 20px 26px; width:100%; max-width:420px; }
+  .round { color:var(--orange); font-weight:700; letter-spacing:1px; font-size:14px; margin-bottom:12px; }
+  .code { background:#fff; border:2px solid var(--bord); border-radius:12px; padding:14px 16px; font-family:'Courier New',monospace; font-size:15px; line-height:1.6; white-space:pre; overflow-x:auto; margin-bottom:14px; }
+  .q { font-weight:700; color:#5A6478; margin-bottom:10px; font-size:15px; }
+  .opt { display:block; width:100%; text-align:left; background:#fff; border:2px solid var(--bord); border-radius:12px; padding:12px 16px; font-family:'Courier New',monospace; font-weight:700; font-size:16px; color:var(--ink); margin-bottom:10px; cursor:pointer; }
+  .opt.sel { border:3px solid var(--orange); background:var(--ot); }
+  .opt.right { border:3px solid var(--good); background:#E8F5E9; }
+  .opt.wrong { border:3px solid var(--bad); background:#FFEBEE; }
+  .lock { width:100%; padding:14px; font-size:17px; font-weight:700; color:#fff; background:var(--orange); border:none; border-radius:12px; cursor:pointer; margin-top:4px; }
+  .lock:disabled { opacity:.45; cursor:default; }
+  .expl { border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.5; margin-top:12px; display:none; }
+  .expl.good { background:#E8F5E9; border:2px solid var(--good); }
+  .expl.bad { background:#FFEBEE; border:2px solid var(--bad); }
+  .meta { margin-top:14px; font-weight:700; color:#5A6478; font-size:15px; }
+  .end { text-align:center; padding:10px 0; }
+  .end .big { font-size:42px; margin:6px 0; }
+  .end h2 { font-size:24px; margin-bottom:8px; }
+  .end p { color:#5A6478; margin:8px 0 16px; font-size:15px; line-height:1.5; }
+  .foot { margin-top:22px; text-align:center; color:#C8D2E6; font-size:14px; }
+  .foot .small { color:#96A6C8; font-size:13px; margin-top:4px; }
+</style>
+</head>
+<body>
+  <div class="tag">LECTURE 10 &middot; THE FOR LOOP</div>
+  <h1>Range Finder</h1>
+  <div class="sub">A loop appears. Predict what it prints.</div>
+
+  <div class="card">
+    <div id="play">
+      <div class="round" id="roundLbl">ROUND 1 OF 12</div>
+      <div class="code" id="codeBox"></div>
+      <div class="q">What does it print?</div>
+      <div id="opts"></div>
+      <button class="lock" id="lockBtn" disabled>Lock it in</button>
+      <div class="expl" id="expl"></div>
+      <div class="meta" id="scoreLbl">Score: 0</div>
+    </div>
+    <div id="end" class="end" style="display:none"></div>
+  </div>
+
+  <div class="foot">Write out the range first<div class="small">2026CSAE100 &middot; Bennett University</div></div>
+
+<script>
+var ROUNDS = [
+ { c:"for i in range(3):\n    print(i)",
+   o:["1 2 3","0 1 2","0 1 2 3"], a:1,
+   e:"One number is the stop. Counting starts at 0 and the stop is never included." },
+ { c:"for i in range(1, 4):\n    print(i)",
+   o:["1 2 3","1 2 3 4","0 1 2 3"], a:0,
+   e:"Start 1, stop 4: the numbers 1, 2, 3." },
+ { c:"for i in range(2, 9, 2):\n    print(i)",
+   o:["2 4 6 8","2 4 6","4 6 8"], a:0,
+   e:"Start 2, jump 2: 2, 4, 6, 8. The next jump would be 10 \u2014 past the stop 9." },
+ { c:"for i in range(5, 0, -1):\n    print(i)",
+   o:["5 4 3 2 1","5 4 3 2 1 0","1 2 3 4 5"], a:0,
+   e:"A negative step counts down. The stop 0 is never included." },
+ { c:"for ch in 'for':\n    print(ch)",
+   o:["for","f o r","for for for"], a:1,
+   e:"One character per round, each printed on its own line." },
+ { c:"total = 0\nfor n in [1, 2, 3, 4]:\n    total = total + n\nprint(total)",
+   o:["10","1 3 6 10","4"], a:0,
+   e:"The accumulator collects 1+2+3+4. The print sits after the loop \u2014 only 10 appears." },
+ { c:"for i in range(4):\n    print('hi')",
+   o:["hi hi hi","hi hi hi hi","hi"], a:1,
+   e:"range(4) gives four rounds: 0, 1, 2, 3. The body prints hi each round." },
+ { c:"for x in [3, 6]:\n    print(x * 2)",
+   o:["3 6","6 12","36 36"], a:1,
+   e:"Two items, two rounds: 3 \u00d7 2 is 6, then 6 \u00d7 2 is 12." },
+ { c:"for i in range(0, 10, 4):\n    print(i)",
+   o:["0 4 8","0 4 8 12","4 8"], a:0,
+   e:"Start 0, jump 4: 0, 4, 8. The next jump would be 12 \u2014 past the stop." },
+ { c:"for i in range(3):\n    i = i + 5\n    print(i)",
+   o:["5 forever","5 6 7","5 5 5"], a:1,
+   e:"Changing i does not steer the loop \u2014 for resets it each round to 0, 1, 2, then adds 5." },
+ { c:"n = 4\nfor i in range(1, 4):\n    print(n * i)",
+   o:["4 8 12","4 8 12 16","1 2 3"], a:0,
+   e:"The times table machine: range(1, 4) is 1, 2, 3, and each round prints 4 \u00d7 i." },
+ { c:"count = 0\nfor ch in 'banana':\n    if ch == 'a':\n        count = count + 1\nprint(count)",
+   o:["6","3","a a a"], a:1,
+   e:"An if inside a for. banana has three a's \u2014 the counter ends at 3, printed once." }
+];
+
+var idx = 0, score = 0, picked = -1, locked = false;
+
+function show() {
+  picked = -1; locked = false;
+  document.getElementById('roundLbl').textContent = 'ROUND ' + (idx + 1) + ' OF ' + ROUNDS.length;
+  document.getElementById('codeBox').textContent = ROUNDS[idx].c;
+  var box = document.getElementById('opts');
+  box.innerHTML = '';
+  var i = 0;
+  while (i < ROUNDS[idx].o.length) {
+    var b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = ROUNDS[idx].o[i];
+    b.setAttribute('data-i', i);
+    b.addEventListener('click', pick);
+    box.appendChild(b);
+    i = i + 1;
+  }
+  var ex = document.getElementById('expl');
+  ex.style.display = 'none'; ex.className = 'expl';
+  var lb = document.getElementById('lockBtn');
+  lb.disabled = true; lb.textContent = 'Lock it in';
+  document.getElementById('scoreLbl').textContent = 'Score: ' + score;
+}
+
+function pick(ev) {
+  if (locked) { return; }
+  picked = parseInt(ev.currentTarget.getAttribute('data-i'), 10);
+  var btns = document.querySelectorAll('.opt');
+  var i = 0;
+  while (i < btns.length) { btns[i].className = 'opt'; i = i + 1; }
+  ev.currentTarget.className = 'opt sel';
+  document.getElementById('lockBtn').disabled = false;
+}
+
+function lock() {
+  var lb = document.getElementById('lockBtn');
+  if (!locked) {
+    locked = true;
+    var right = ROUNDS[idx].a;
+    var btns = document.querySelectorAll('.opt');
+    btns[right].className = 'opt right';
+    var ex = document.getElementById('expl');
+    if (picked === right) {
+      score = score + 1;
+      ex.className = 'expl good';
+      ex.textContent = '\u2713 Correct. ' + ROUNDS[idx].e;
+    } else {
+      btns[picked].className = 'opt wrong';
+      ex.className = 'expl bad';
+      ex.textContent = '\u2717 Not this time. ' + ROUNDS[idx].e;
+    }
+    ex.style.display = 'block';
+    document.getElementById('scoreLbl').textContent = 'Score: ' + score;
+    lb.textContent = (idx + 1 < ROUNDS.length) ? 'Next loop' : 'See my result';
+  } else {
+    idx = idx + 1;
+    if (idx < ROUNDS.length) { show(); } else { finish(); }
+  }
+}
+
+function finish() {
+  var e = document.getElementById('end');
+  var msg, emo;
+  if (score >= 10) { emo = '\ud83c\udfc6'; msg = 'You beat 10 of 12 \u2014 the for loop is yours. Ranges, strings and accumulators all traced correctly.'; }
+  else if (score >= 7) { emo = '\ud83d\udcaa'; msg = 'Solid tracing. Watch the stops \u2014 the stop is never included, and that is where most marks slip.'; }
+  else { emo = '\ud83d\udcd6'; msg = 'Keep tracing: write out every range first \u2014 start, stop, step \u2014 then walk the loop. Then play again.'; }
+  e.innerHTML = '<div class="big">' + emo + '</div><h2>' + score + ' out of ' + ROUNDS.length + '</h2><p>' + msg + '</p><button class="lock" onclick="restart()">Play again</button>';
+  document.getElementById('play').style.display = 'none';
+  e.style.display = 'block';
+}
+
+function restart() {
+  idx = 0; score = 0;
+  document.getElementById('play').style.display = 'block';
+  document.getElementById('end').style.display = 'none';
+  show();
+}
+
+document.getElementById('lockBtn').addEventListener('click', lock);
+show();
+</script>
+</body>
+</html>

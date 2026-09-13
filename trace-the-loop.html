@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trace the Loop — Lecture 9</title>
+<style>
+  :root { --navy:#1F3864; --orange:#ED7D31; --cream:#FAF5EC; --ink:#1F3864; --bord:#D8DCE6; --ot:#FDF1E4; --good:#2E7D32; --bad:#C62828; }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Arial, sans-serif; }
+  body { background:var(--navy); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 40px; color:#fff; }
+  .tag { color:var(--orange); font-weight:700; letter-spacing:1px; font-size:14px; margin-top:12px; }
+  h1 { font-size:34px; margin:6px 0 4px; }
+  .sub { color:#C8D2E6; font-size:15px; margin-bottom:20px; }
+  .card { background:var(--cream); color:var(--ink); border-radius:22px; padding:22px 20px 26px; width:100%; max-width:420px; }
+  .round { color:var(--orange); font-weight:700; letter-spacing:1px; font-size:14px; margin-bottom:12px; }
+  .code { background:#fff; border:2px solid var(--bord); border-radius:12px; padding:14px 16px; font-family:'Courier New',monospace; font-size:15px; line-height:1.6; white-space:pre; overflow-x:auto; margin-bottom:14px; }
+  .q { font-weight:700; color:#5A6478; margin-bottom:10px; font-size:15px; }
+  .opt { display:block; width:100%; text-align:left; background:#fff; border:2px solid var(--bord); border-radius:12px; padding:12px 16px; font-family:'Courier New',monospace; font-weight:700; font-size:16px; color:var(--ink); margin-bottom:10px; cursor:pointer; }
+  .opt.sel { border:3px solid var(--orange); background:var(--ot); }
+  .opt.right { border:3px solid var(--good); background:#E8F5E9; }
+  .opt.wrong { border:3px solid var(--bad); background:#FFEBEE; }
+  .lock { width:100%; padding:14px; font-size:17px; font-weight:700; color:#fff; background:var(--orange); border:none; border-radius:12px; cursor:pointer; margin-top:4px; }
+  .lock:disabled { opacity:.45; cursor:default; }
+  .expl { border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.5; margin-top:12px; display:none; }
+  .expl.good { background:#E8F5E9; border:2px solid var(--good); }
+  .expl.bad { background:#FFEBEE; border:2px solid var(--bad); }
+  .meta { margin-top:14px; font-weight:700; color:#5A6478; font-size:15px; }
+  .end { text-align:center; padding:10px 0; }
+  .end .big { font-size:42px; margin:6px 0; }
+  .end h2 { font-size:24px; margin-bottom:8px; }
+  .end p { color:#5A6478; margin:8px 0 16px; font-size:15px; line-height:1.5; }
+  .foot { margin-top:22px; text-align:center; color:#C8D2E6; font-size:14px; }
+  .foot .small { color:#96A6C8; font-size:13px; margin-top:4px; }
+</style>
+</head>
+<body>
+  <div class="tag">LECTURE 9 &middot; THE WHILE LOOP</div>
+  <h1>Trace the Loop</h1>
+  <div class="sub">A loop appears. Predict what it prints.</div>
+
+  <div class="card">
+    <div id="play">
+      <div class="round" id="roundLbl">ROUND 1 OF 12</div>
+      <div class="code" id="codeBox"></div>
+      <div class="q">What does it print?</div>
+      <div id="opts"></div>
+      <button class="lock" id="lockBtn" disabled>Lock it in</button>
+      <div class="expl" id="expl"></div>
+      <div class="meta" id="scoreLbl">Score: 0</div>
+    </div>
+    <div id="end" class="end" style="display:none"></div>
+  </div>
+
+  <div class="foot">Trace it round by round<div class="small">2026CSAE100 &middot; Bennett University</div></div>
+
+<script>
+var ROUNDS = [
+ { c:"i = 1\nwhile i <= 3:\n    print(i)\n    i = i + 1",
+   o:["1 2 3","1 2 3 4","1 1 1 forever"], a:0,
+   e:"Print, then move. When i becomes 4 the check fails — 4 never prints." },
+ { c:"i = 5\nwhile i > 2:\n    print(i)\n    i = i - 1",
+   o:["5 4 3 2","5 4 3","4 3 2"], a:1,
+   e:"When i becomes 2, the check 2 > 2 is False — 2 is never printed." },
+ { c:"i = 1\nwhile i < 4:\n    print(i)",
+   o:["1 2 3","1 forever","error"], a:1,
+   e:"Nothing changes i, so the condition stays True. The update line is missing." },
+ { c:"i = 0\nwhile i < 6:\n    i = i + 2\n    print(i)",
+   o:["0 2 4","2 4 6","0 2 4 6"], a:1,
+   e:"The update runs before the print. 6 prints because the check ran while i was still 4." },
+ { c:"total = 0\nn = 1\nwhile n <= 4:\n    total = total + n\n    n = n + 1\nprint(total)",
+   o:["10","1 3 6 10","4"], a:0,
+   e:"The print sits after the loop — only the final total appears: 1+2+3+4 = 10." },
+ { c:"i = 10\nwhile i > 4:\n    i = i - 2\n    print(i)",
+   o:["10 8 6","8 6 4","8 6"], a:1,
+   e:"Update before print: the value that ends the loop (4) is still printed." },
+ { c:"i = 1\nwhile i < 5:\n    i = i * 2\n    print(i)",
+   o:["2 4","2 4 8","1 2 4"], a:1,
+   e:"The check runs before each round. It saw i = 4, doubled it, and printed 8." },
+ { c:"n = 52\ntotal = 0\nwhile n > 0:\n    total = total + n % 10\n    n = n // 10\nprint(total)",
+   o:["52","25","7"], a:2,
+   e:"Round 1: 52 % 10 is 2, n becomes 5. Round 2: 5 % 10 is 5, n becomes 0. 2 + 5 = 7." },
+ { c:"i = 3\nwhile i > 0:\n    print('go')\n    i = i - 1",
+   o:["go go go","go go","go forever"], a:0,
+   e:"Three rounds: i = 3, 2, 1. When i becomes 0, the check fails." },
+ { c:"s = 'hat'\ni = 0\nwhile i < len(s):\n    print(s[i])\n    i = i + 1",
+   o:["h a t","hat hat hat","0 1 2"], a:0,
+   e:"The string walk: index 0, 1, 2 — one character per round." },
+ { c:"i = 2\nwhile i < 9:\n    print(i)\n    i = i + 3",
+   o:["2 5 8","2 5 8 11","3 6 9"], a:0,
+   e:"Jumps in threes from 2. 11 fails the check, so it never prints." },
+ { c:"n = 1\nwhile n <= 3:\n    print(n * n)\n    n = n + 1",
+   o:["1 2 3","1 4 9","2 4 6"], a:1,
+   e:"It prints n * n each round: 1, 4, 9." }
+];
+
+var idx = 0, score = 0, picked = -1, locked = false;
+
+function show() {
+  picked = -1; locked = false;
+  document.getElementById('roundLbl').textContent = 'ROUND ' + (idx + 1) + ' OF ' + ROUNDS.length;
+  document.getElementById('codeBox').textContent = ROUNDS[idx].c;
+  var box = document.getElementById('opts');
+  box.innerHTML = '';
+  var i = 0;
+  while (i < ROUNDS[idx].o.length) {
+    var b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = ROUNDS[idx].o[i];
+    b.setAttribute('data-i', i);
+    b.addEventListener('click', pick);
+    box.appendChild(b);
+    i = i + 1;
+  }
+  var ex = document.getElementById('expl');
+  ex.style.display = 'none'; ex.className = 'expl';
+  var lb = document.getElementById('lockBtn');
+  lb.disabled = true; lb.textContent = 'Lock it in';
+  document.getElementById('scoreLbl').textContent = 'Score: ' + score;
+}
+
+function pick(ev) {
+  if (locked) { return; }
+  picked = parseInt(ev.currentTarget.getAttribute('data-i'), 10);
+  var btns = document.querySelectorAll('.opt');
+  var i = 0;
+  while (i < btns.length) { btns[i].className = 'opt'; i = i + 1; }
+  ev.currentTarget.className = 'opt sel';
+  document.getElementById('lockBtn').disabled = false;
+}
+
+function lock() {
+  var lb = document.getElementById('lockBtn');
+  if (!locked) {
+    locked = true;
+    var right = ROUNDS[idx].a;
+    var btns = document.querySelectorAll('.opt');
+    btns[right].className = 'opt right';
+    var ex = document.getElementById('expl');
+    if (picked === right) {
+      score = score + 1;
+      ex.className = 'expl good';
+      ex.textContent = '✓ Correct. ' + ROUNDS[idx].e;
+    } else {
+      btns[picked].className = 'opt wrong';
+      ex.className = 'expl bad';
+      ex.textContent = '✗ Not this time. ' + ROUNDS[idx].e;
+    }
+    ex.style.display = 'block';
+    document.getElementById('scoreLbl').textContent = 'Score: ' + score;
+    lb.textContent = (idx + 1 < ROUNDS.length) ? 'Next loop' : 'See my result';
+  } else {
+    idx = idx + 1;
+    if (idx < ROUNDS.length) { show(); } else { finish(); }
+  }
+}
+
+function finish() {
+  var e = document.getElementById('end');
+  var msg, emo;
+  if (score >= 10) { emo = '🏆'; msg = 'You beat 10 of 12 — the while loop is yours. Counters, sums and infinite loops all traced correctly.'; }
+  else if (score >= 7) { emo = '💪'; msg = 'Solid tracing. Watch the rounds where the update runs before the print — that is where most marks slip.'; }
+  else { emo = '📖'; msg = 'Keep tracing: write i round by round in the margin, and always ask what makes the condition False. Then play again.'; }
+  e.innerHTML = '<div class="big">' + emo + '</div><h2>' + score + ' out of ' + ROUNDS.length + '</h2><p>' + msg + '</p><button class="lock" onclick="restart()">Play again</button>';
+  document.getElementById('play').style.display = 'none';
+  e.style.display = 'block';
+}
+
+function restart() {
+  idx = 0; score = 0;
+  document.getElementById('play').style.display = 'block';
+  document.getElementById('end').style.display = 'none';
+  show();
+}
+
+document.getElementById('lockBtn').addEventListener('click', lock);
+show();
+</script>
+</body>
+</html>
