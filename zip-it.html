@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zip It — Lab E6</title>
+<style>
+  :root {
+    --navy: #1F3A5F;
+    --navy-dark: #16283F;
+    --orange: #E8842C;
+    --orange-light: #F5A25D;
+    --green: #2E7D32;
+    --green-tint: #E8F5E9;
+    --red: #C62828;
+    --red-tint: #FDECEA;
+    --light: #F5F7FA;
+    --border: #D7DEE8;
+    --ink: #2B2B2B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--navy);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    color: var(--ink);
+  }
+  .app { width: 100%; max-width: 480px; }
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #fff; padding: 6px 2px 14px 2px;
+  }
+  .top .brand { font-weight: 800; letter-spacing: 1px; font-size: 14px; }
+  .top .brand span { color: var(--orange-light); }
+  .top .score { font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 999px; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .progress { display: flex; gap: 6px; margin-bottom: 16px; }
+  .progress div { flex: 1; height: 6px; border-radius: 3px; background: var(--border); }
+  .progress div.done { background: var(--orange); }
+  .qlabel { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--orange); margin-bottom: 6px; }
+  .question { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  pre.code {
+    background: var(--navy-dark); color: #fff; border-radius: 12px;
+    padding: 14px 16px; font-family: "Consolas", "Menlo", monospace;
+    font-size: 13.5px; line-height: 1.55; overflow-x: auto; margin-bottom: 16px;
+  }
+  .opts { display: grid; gap: 10px; }
+  .opt {
+    width: 100%; text-align: left; background: var(--light);
+    border: 2px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .opt pre {
+    font-family: "Consolas", "Menlo", monospace; font-size: 13px; line-height: 1.5;
+    color: var(--navy); font-weight: 600; overflow-x: auto; background: none;
+  }
+  .opt .tag { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--orange); display: block; margin-bottom: 4px; }
+  .opt:active { border-color: var(--navy); }
+  .opt.correct { background: var(--green-tint); border-color: var(--green); }
+  .opt.correct pre { color: var(--green); }
+  .opt.wrong { background: var(--red-tint); border-color: var(--red); }
+  .opt.wrong pre { color: var(--red); }
+  .opt:disabled { cursor: default; }
+  .feedback { display: none; margin-top: 14px; border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+  .feedback.good { display: block; background: var(--green-tint); color: var(--green); font-weight: 600; }
+  .feedback.bad { display: block; background: var(--red-tint); color: var(--red); font-weight: 600; }
+  .next {
+    display: none; width: 100%; margin-top: 14px; background: var(--navy); color: #fff;
+    border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 800; cursor: pointer;
+  }
+  .center { text-align: center; }
+  .big { font-size: 44px; font-weight: 900; color: var(--navy); margin: 10px 0; }
+  .msg { font-size: 16px; color: var(--ink); margin-bottom: 18px; }
+  .start-title { font-size: 26px; font-weight: 900; color: var(--navy); margin-bottom: 8px; }
+  .rules { text-align: left; margin: 16px 0 20px 0; padding-left: 18px; color: var(--ink); font-size: 15px; line-height: 1.7; }
+  .go {
+    width: 100%; background: var(--orange); color: #fff; border: none; border-radius: 12px;
+    padding: 15px; font-size: 17px; font-weight: 800; cursor: pointer;
+  }
+  .tag2 { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--orange); margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">ZIP <span>IT</span></div>
+    <div class="score" id="scorebox">Score: 0</div>
+  </div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+var rounds = [
+  {
+    q: "True or False?",
+    show: 'print("an" in "banana")',
+    options: ["True", "False", "error"],
+    answer: 0,
+    why: "\"an\" sits inside \"banana\" as a substring \u2014 in checks pieces of strings too."
+  },
+  {
+    q: "True or False?",
+    show: 'marks = [72, 35, 88]\nprint(40 not in marks)',
+    options: ["True", "False", "40"],
+    answer: 0,
+    why: "40 is not in the list, so not in gives True."
+  },
+  {
+    q: "What does this print?",
+    show: 'for i, ch in enumerate(["a", "b"]):\n    print(i, ch)',
+    options: ["0 a\n1 b", "1 a\n2 b", "a b"],
+    answer: 0,
+    why: "enumerate hands you the position and the value \u2014 and it starts at 0."
+  },
+  {
+    q: "What does this print?",
+    show: 'for i, ch in enumerate(["a", "b"], start=1):\n    print(i, ch)',
+    options: ["1 a\n2 b", "0 a\n1 b", "1 b\n2 a"],
+    answer: 0,
+    why: "start=1 begins the numbering at 1 \u2014 handy for rank lists."
+  },
+  {
+    q: "What does this print?",
+    show: 'names = ["Arjun", "Meera"]\nmarks = [72, 35]\nfor n, m in zip(names, marks):\n    print(n, m)',
+    options: ["Arjun 72\nMeera 35", "Arjun Meera\n72 35", "Arjun 35\nMeera 72"],
+    answer: 0,
+    why: "zip pairs first with first, second with second \u2014 each round gives one pair."
+  },
+  {
+    q: "How many lines does this print?",
+    show: 'for a, b in zip([1, 2, 3], [9]):\n    print(a, b)',
+    options: ["1", "3", "error"],
+    answer: 0,
+    why: "zip stops at the shorter list \u2014 only one pair exists: 1 with 9."
+  },
+  {
+    q: "You need WHERE each failing mark sits in the list. Which tool?",
+    show: 'marks = [72, 35, 88, 20]',
+    options: ["enumerate()", "in", "zip()"],
+    answer: 0,
+    why: "Positions are enumerate\u2019s job \u2014 it hands you the index with each value."
+  },
+  {
+    q: "What does this print?",
+    show: 'names = ["Arjun", "Meera", "Zoya"]\nmarks = [72, 35, 88]\nfor n, m in zip(names, marks):\n    if m >= 40:\n        print(n)',
+    options: ["Arjun\nZoya", "Meera", "72\n88"],
+    answer: 0,
+    why: "zip pairs names with marks, and the if keeps only the passing pairs \u2014 Arjun and Zoya."
+  }
+];
+
+var current = 0;
+var score = 0;
+var card = document.getElementById('card');
+var scorebox = document.getElementById('scorebox');
+
+function shuffleOptions(round) {
+  var order = [];
+  for (var i = 0; i < round.options.length; i++) { order.push(i); }
+  for (var i = order.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+  }
+  return order;
+}
+
+function esc(t) {
+  return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function showStart() {
+  current = 0;
+  score = 0;
+  scorebox.textContent = 'Score: 0';
+  var html = '';
+  html += '<div class="center">';
+  html += '<div class="tag2">LAB E6 \u00B7 in \u00B7 enumerate \u00B7 zip</div>';
+  html += '<div class="start-title">Two lists walk in.<br>What comes out?</div>';
+  html += '</div>';
+  html += '<ol class="rules">';
+  html += '<li>8 rounds on in, enumerate() and zip()</li>';
+  html += '<li>Read the code, then pick what it prints</li>';
+  html += '<li>New tools? Guess from the names \u2014 they are honest</li>';
+  html += '</ol>';
+  html += '<button class="go" onclick="showRound()">START</button>';
+  card.innerHTML = html;
+}
+
+function showRound() {
+  var r = rounds[current];
+  var order = shuffleOptions(r);
+  var html = '';
+  html += '<div class="progress">';
+  for (var i = 0; i < rounds.length; i++) {
+    html += '<div class="' + (i < current ? 'done' : '') + '"></div>';
+  }
+  html += '</div>';
+  html += '<div class="qlabel">ROUND ' + (current + 1) + ' OF ' + rounds.length + '</div>';
+  html += '<div class="question">' + r.q + '</div>';
+  html += '<pre class="code">' + esc(r.show) + '</pre>';
+  html += '<div class="opts">';
+  var letters = ['A', 'B', 'C'];
+  for (var i = 0; i < order.length; i++) {
+    var idx = order[i];
+    html += '<button class="opt" data-idx="' + idx + '" onclick="pick(this)">';
+    html += '<span class="tag">' + letters[i] + '</span>';
+    html += '<pre>' + esc(r.options[idx]) + '</pre>';
+    html += '</button>';
+  }
+  html += '</div>';
+  html += '<div class="feedback" id="feedback"></div>';
+  html += '<button class="next" id="next" onclick="nextRound()">' + (current === rounds.length - 1 ? 'SEE MY SCORE' : 'NEXT ROUND') + '</button>';
+  card.innerHTML = html;
+}
+
+function pick(btn) {
+  var r = rounds[current];
+  var chosen = parseInt(btn.getAttribute('data-idx'));
+  var buttons = card.querySelectorAll('.opt');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].disabled = true;
+    if (parseInt(buttons[i].getAttribute('data-idx')) === r.answer) {
+      buttons[i].classList.add('correct');
+    }
+  }
+  var fb = document.getElementById('feedback');
+  if (chosen === r.answer) {
+    score = score + 1;
+    fb.className = 'feedback good';
+    fb.textContent = 'Correct! ' + r.why;
+  } else {
+    btn.classList.add('wrong');
+    fb.className = 'feedback bad';
+    fb.textContent = 'Not quite. ' + r.why;
+  }
+  scorebox.textContent = 'Score: ' + score;
+  document.getElementById('next').style.display = 'block';
+}
+
+function nextRound() {
+  current = current + 1;
+  if (current < rounds.length) {
+    showRound();
+  } else {
+    showEnd();
+  }
+}
+
+function showEnd() {
+  var msg = '';
+  if (score === 8) { msg = 'Perfect! You pair lists like zip itself.'; }
+  else if (score >= 6) { msg = 'Strong! The toolkit is nearly yours.'; }
+  else if (score >= 4) { msg = 'Good start. The lab slides cover every one of these.'; }
+  else { msg = 'New tools take a minute. Play again after the lab.'; }
+  var html = '';
+  html += '<div class="center">';
+  html += '<div class="tag2">FINAL SCORE</div>';
+  html += '<div class="big">' + score + ' / ' + rounds.length + '</div>';
+  html += '<div class="msg">' + msg + '</div>';
+  html += '<button class="go" onclick="showStart()">PLAY AGAIN</button>';
+  html += '</div>';
+  card.innerHTML = html;
+}
+
+showStart();
+</script>
+</body>
+</html>

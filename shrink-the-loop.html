@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shrink the Loop — Lecture 12</title>
+<style>
+  :root {
+    --navy: #1F3A5F;
+    --navy-dark: #16283F;
+    --orange: #E8842C;
+    --orange-light: #F5A25D;
+    --green: #2E7D32;
+    --green-tint: #E8F5E9;
+    --red: #C62828;
+    --red-tint: #FDECEA;
+    --light: #F5F7FA;
+    --border: #D7DEE8;
+    --ink: #2B2B2B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--navy);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    color: var(--ink);
+  }
+  .app { width: 100%; max-width: 480px; }
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #fff; padding: 6px 2px 14px 2px;
+  }
+  .top .brand { font-weight: 800; letter-spacing: 1px; font-size: 14px; }
+  .top .brand span { color: var(--orange-light); }
+  .top .score { font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 999px; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .progress { display: flex; gap: 6px; margin-bottom: 16px; }
+  .progress div { flex: 1; height: 6px; border-radius: 3px; background: var(--border); }
+  .progress div.done { background: var(--orange); }
+  .qlabel { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--orange); margin-bottom: 6px; }
+  .question { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  pre.code {
+    background: var(--navy-dark); color: #fff; border-radius: 12px;
+    padding: 14px 16px; font-family: "Consolas", "Menlo", monospace;
+    font-size: 13.5px; line-height: 1.55; overflow-x: auto; margin-bottom: 16px;
+  }
+  .opts { display: grid; gap: 10px; }
+  .opt {
+    width: 100%; text-align: left; background: var(--light);
+    border: 2px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .opt pre {
+    font-family: "Consolas", "Menlo", monospace; font-size: 13px; line-height: 1.5;
+    color: var(--navy); font-weight: 600; overflow-x: auto; background: none;
+  }
+  .opt .tag { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--orange); display: block; margin-bottom: 4px; }
+  .opt:active { border-color: var(--navy); }
+  .opt.correct { background: var(--green-tint); border-color: var(--green); }
+  .opt.correct pre { color: var(--green); }
+  .opt.wrong { background: var(--red-tint); border-color: var(--red); }
+  .opt.wrong pre { color: var(--red); }
+  .opt:disabled { cursor: default; }
+  .feedback { display: none; margin-top: 14px; border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+  .feedback.good { display: block; background: var(--green-tint); color: var(--green); font-weight: 600; }
+  .feedback.bad { display: block; background: var(--red-tint); color: var(--red); font-weight: 600; }
+  .next {
+    display: none; width: 100%; margin-top: 14px; background: var(--navy); color: #fff;
+    border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 800; cursor: pointer;
+  }
+  .center { text-align: center; }
+  .big { font-size: 44px; font-weight: 900; color: var(--navy); margin: 10px 0; }
+  .msg { font-size: 16px; color: var(--ink); margin-bottom: 18px; }
+  .start-title { font-size: 26px; font-weight: 900; color: var(--navy); margin-bottom: 8px; }
+  .rules { text-align: left; margin: 16px 0 20px 0; padding-left: 18px; color: var(--ink); font-size: 15px; line-height: 1.7; }
+  .go {
+    width: 100%; background: var(--orange); color: #fff; border: none; border-radius: 12px;
+    padding: 15px; font-size: 17px; font-weight: 800; cursor: pointer;
+  }
+  .tag2 { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--orange); margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">SHRINK <span>THE LOOP</span></div>
+    <div class="score" id="scorebox">Score: 0</div>
+  </div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+// mode "l2c": show loop, pick the matching one-liner
+// mode "c2o": show one-liner, pick what it gives
+var rounds = [
+  {
+    mode: "l2c",
+    show: 'doubles = []\nfor n in numbers:\n    doubles.append(n * 2)',
+    options: ["doubles = [n * 2 for n in numbers]", "doubles = [n for n in numbers * 2]", "doubles = [n * 2 in numbers]"],
+    answer: 0,
+    why: "The appended expression n * 2 moves to the front; the for part stays as it is."
+  },
+  {
+    mode: "c2o",
+    show: '[x + 1 for x in [1, 2, 3]]',
+    options: ["[2, 3, 4]", "[1, 2, 3, 1]", "[1, 2, 3]"],
+    answer: 0,
+    why: "Each value is collected with 1 added: a list of x + 1, for every x."
+  },
+  {
+    mode: "l2c",
+    show: 'evens = []\nfor n in nums:\n    if n % 2 == 0:\n        evens.append(n)',
+    options: ["evens = [n for n in nums if n % 2 == 0]", "evens = [n if n % 2 == 0 for n in nums]", "evens = [n % 2 for n in nums]"],
+    answer: 0,
+    why: "The if goes at the end, after the for. Putting it before the for is a syntax error."
+  },
+  {
+    mode: "c2o",
+    show: '[m for m in [55, 30, 80] if m > 50]',
+    options: ["[55, 80]", "[30]", "[55, 30, 80]"],
+    answer: 0,
+    why: "Only values that pass the condition are kept \u2014 30 is dropped."
+  },
+  {
+    mode: "l2c",
+    show: 'lengths = []\nfor w in words:\n    lengths.append(len(w))',
+    options: ["lengths = [len(w) for w in words]", "lengths = [w.len() for w in words]", "lengths = [len(words) for w]"],
+    answer: 0,
+    why: "Function calls work as the collected expression: len(w) for every w."
+  },
+  {
+    mode: "c2o",
+    show: '[c for c in "hi!"]',
+    options: ["['h', 'i', '!']", "'hi!'", "['hi!']"],
+    answer: 0,
+    why: "Comprehensions loop over strings one character at a time \u2014 the result is a list of the characters."
+  },
+  {
+    mode: "l2c",
+    show: 'caps = []\nfor name in names:\n    caps.append(name.upper())',
+    options: ["caps = [name.upper() for name in names]", "caps = [name for name in names.upper()]", "caps = [upper(name) for name in names]"],
+    answer: 0,
+    why: "The method call name.upper() is the collected expression; the for part never changes."
+  },
+  {
+    mode: "c2o",
+    show: '[n * n for n in range(4)]',
+    options: ["[0, 1, 4, 9]", "[1, 4, 9, 16]", "[0, 1, 2, 3]"],
+    answer: 0,
+    why: "range(4) gives 0, 1, 2, 3 \u2014 and each is squared as it is collected."
+  }
+];
+
+var current = 0;
+var score = 0;
+var card = document.getElementById('card');
+var scorebox = document.getElementById('scorebox');
+
+function shuffleOptions(round) {
+  var order = [];
+  for (var i = 0; i < round.options.length; i++) { order.push(i); }
+  for (var i = order.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+  }
+  return order;
+}
+
+function esc(t) {
+  return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function showStart() {
+  current = 0;
+  score = 0;
+  scorebox.textContent = 'Score: 0';
+  var html = '';
+  html += '<div class="center">';
+  html += '<div class="tag2">LECTURE 12 \u00B7 LIST COMPREHENSION</div>';
+  html += '<div class="start-title">Four lines in.<br>One line out.</div>';
+  html += '</div>';
+  html += '<ol class="rules">';
+  html += '<li>8 rounds of loops and their one-line versions</li>';
+  html += '<li>Sometimes: match the loop to its one-liner</li>';
+  html += '<li>Sometimes: predict what a one-liner gives</li>';
+  html += '</ol>';
+  html += '<button class="go" onclick="showRound()">START</button>';
+  card.innerHTML = html;
+}
+
+function showRound() {
+  var r = rounds[current];
+  var order = shuffleOptions(r);
+  var html = '';
+  html += '<div class="progress">';
+  for (var i = 0; i < rounds.length; i++) {
+    html += '<div class="' + (i < current ? 'done' : '') + '"></div>';
+  }
+  html += '</div>';
+  html += '<div class="qlabel">ROUND ' + (current + 1) + ' OF ' + rounds.length + '</div>';
+  if (r.mode === 'l2c') {
+    html += '<div class="question">Which one-liner does the same job?</div>';
+  } else {
+    html += '<div class="question">What does this give?</div>';
+  }
+  html += '<pre class="code">' + esc(r.show) + '</pre>';
+  html += '<div class="opts">';
+  var letters = ['A', 'B', 'C'];
+  for (var i = 0; i < order.length; i++) {
+    var idx = order[i];
+    html += '<button class="opt" data-idx="' + idx + '" onclick="pick(this)">';
+    html += '<span class="tag">' + letters[i] + '</span>';
+    html += '<pre>' + esc(r.options[idx]) + '</pre>';
+    html += '</button>';
+  }
+  html += '</div>';
+  html += '<div class="feedback" id="feedback"></div>';
+  html += '<button class="next" id="next" onclick="nextRound()">' + (current === rounds.length - 1 ? 'SEE MY SCORE' : 'NEXT ROUND') + '</button>';
+  card.innerHTML = html;
+}
+
+function pick(btn) {
+  var r = rounds[current];
+  var chosen = parseInt(btn.getAttribute('data-idx'));
+  var buttons = card.querySelectorAll('.opt');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].disabled = true;
+    if (parseInt(buttons[i].getAttribute('data-idx')) === r.answer) {
+      buttons[i].classList.add('correct');
+    }
+  }
+  var fb = document.getElementById('feedback');
+  if (chosen === r.answer) {
+    score = score + 1;
+    fb.className = 'feedback good';
+    fb.textContent = 'Correct! ' + r.why;
+  } else {
+    btn.classList.add('wrong');
+    fb.className = 'feedback bad';
+    fb.textContent = 'Not quite. ' + r.why;
+  }
+  scorebox.textContent = 'Score: ' + score;
+  document.getElementById('next').style.display = 'block';
+}
+
+function nextRound() {
+  current = current + 1;
+  if (current < rounds.length) {
+    showRound();
+  } else {
+    showEnd();
+  }
+}
+
+function showEnd() {
+  var msg = '';
+  if (score === 8) { msg = 'Perfect! One-liners hold no secrets for you.'; }
+  else if (score >= 6) { msg = 'Strong! You read comprehensions like sentences.'; }
+  else if (score >= 4) { msg = 'Good start. The lecture unfolds every one of these.'; }
+  else { msg = 'Strange lines, right? They will read like English after the lecture.'; }
+  var html = '';
+  html += '<div class="center">';
+  html += '<div class="tag2">FINAL SCORE</div>';
+  html += '<div class="big">' + score + ' / ' + rounds.length + '</div>';
+  html += '<div class="msg">' + msg + '</div>';
+  html += '<button class="go" onclick="showStart()">PLAY AGAIN</button>';
+  html += '</div>';
+  card.innerHTML = html;
+}
+
+showStart();
+</script>
+</body>
+</html>
