@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phonebook Memory — Lecture 13</title>
+<style>
+  :root {
+    --navy: #1F3A5F;
+    --navy-dark: #16283F;
+    --orange: #E8842C;
+    --orange-light: #F5A25D;
+    --green: #2E7D32;
+    --green-tint: #E8F5E9;
+    --red: #C62828;
+    --red-tint: #FDECEA;
+    --light: #F5F7FA;
+    --border: #D7DEE8;
+    --ink: #2B2B2B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--navy);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    color: var(--ink);
+  }
+  .app { width: 100%; max-width: 480px; }
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #fff; padding: 6px 2px 14px 2px;
+  }
+  .top .brand { font-weight: 800; letter-spacing: 1px; font-size: 14px; }
+  .top .brand span { color: var(--orange-light); }
+  .top .score { font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 999px; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .center { text-align: center; }
+  .tag2 { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: var(--orange); margin-bottom: 4px; }
+  .start-title { font-size: 26px; font-weight: 900; color: var(--navy); margin-bottom: 8px; }
+  .rules { text-align: left; margin: 16px 0 20px 0; padding-left: 18px; color: var(--ink); font-size: 15px; line-height: 1.7; }
+  .go {
+    width: 100%; background: var(--orange); color: #fff; border: none; border-radius: 12px;
+    padding: 15px; font-size: 17px; font-weight: 800; cursor: pointer;
+  }
+  .go.navy { background: var(--navy); }
+  .timer { font-size: 44px; font-weight: 900; color: var(--orange); text-align: center; margin: 4px 0 10px 0; }
+  .hint { font-size: 14px; color: var(--ink); text-align: center; margin-bottom: 12px; }
+  .book { display: grid; gap: 8px; margin-bottom: 14px; }
+  .book div {
+    display: flex; justify-content: space-between; background: var(--light);
+    border: 2px solid var(--border); border-radius: 10px; padding: 10px 14px;
+    font-size: 16px; font-weight: 700; color: var(--navy);
+  }
+  .book div span:last-child { font-family: "Consolas", "Menlo", monospace; color: var(--orange); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .col-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: var(--orange); text-align: center; margin-bottom: 2px; }
+  .tile {
+    width: 100%; background: var(--navy); color: #fff; border: 2px solid var(--navy);
+    border-radius: 12px; padding: 14px 6px; font-size: 16px; font-weight: 700;
+    cursor: pointer; min-height: 52px; font-family: inherit;
+  }
+  .tile.number { font-family: "Consolas", "Menlo", monospace; }
+  .tile.open { background: #fff; color: var(--navy); border-color: var(--navy); }
+  .tile.done { background: var(--green-tint); color: var(--green); border-color: var(--green); }
+  .tile.bad { background: var(--red-tint); color: var(--red); border-color: var(--red); }
+  .tile:disabled { cursor: default; }
+  .status { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .big { font-size: 44px; font-weight: 900; color: var(--navy); margin: 10px 0; }
+  .msg { font-size: 16px; color: var(--ink); margin-bottom: 14px; line-height: 1.5; }
+  .punch {
+    background: var(--light); border-left: 4px solid var(--orange); border-radius: 8px;
+    padding: 12px 14px; font-size: 15px; text-align: left; margin-bottom: 18px; line-height: 1.5;
+  }
+  .punch b { color: var(--navy); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">PHONEBOOK <span>MEMORY</span></div>
+    <div class="score" id="scorebox">Mistakes: 0</div>
+  </div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+var allNames = ["Arjun", "Meera", "Zoya", "Kabir", "Ishaan", "Riya", "Dev", "Ananya", "Farhan", "Priya", "Nikhil", "Sana"];
+var PAIRS = 6;
+var STUDY_SECONDS = 8;
+
+var book = [];
+var mistakes = 0;
+var matched = 0;
+var tries = 0;
+var openName = null;
+var openNumber = null;
+var locked = false;
+var timerId = null;
+
+var card = document.getElementById('card');
+var scorebox = document.getElementById('scorebox');
+
+function shuffle(list) {
+  var copy = [];
+  for (var i = 0; i < list.length; i++) { copy.push(list[i]); }
+  for (var i = copy.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = copy[i]; copy[i] = copy[j]; copy[j] = tmp;
+  }
+  return copy;
+}
+
+function makeNumber(used) {
+  var n = '';
+  while (true) {
+    n = '9' + String(Math.floor(1000 + Math.random() * 9000));
+    var seen = false;
+    for (var i = 0; i < used.length; i++) { if (used[i] === n) { seen = true; } }
+    if (!seen) { return n; }
+  }
+}
+
+function newBook() {
+  var names = shuffle(allNames).slice(0, PAIRS);
+  var used = [];
+  book = [];
+  for (var i = 0; i < names.length; i++) {
+    var num = makeNumber(used);
+    used.push(num);
+    book.push({ name: names[i], number: num });
+  }
+}
+
+function showStart() {
+  if (timerId) { clearInterval(timerId); timerId = null; }
+  mistakes = 0; matched = 0; tries = 0;
+  scorebox.textContent = 'Mistakes: 0';
+  var html = '';
+  html += '<div class="center">';
+  html += '<div class="tag2">LECTURE 13 \u00B7 DICTIONARIES</div>';
+  html += '<div class="start-title">Can you remember<br>six phone numbers?</div>';
+  html += '</div>';
+  html += '<ol class="rules">';
+  html += '<li>You get <b>8 seconds</b> to study a phonebook of 6 contacts</li>';
+  html += '<li>Then the cards flip over</li>';
+  html += '<li>Tap a name, then tap the number you think is theirs</li>';
+  html += '<li>Fewest mistakes wins. Zero is possible!</li>';
+  html += '</ol>';
+  html += '<button class="go" onclick="showStudy()">START</button>';
+  card.innerHTML = html;
+}
+
+function showStudy() {
+  newBook();
+  var left = STUDY_SECONDS;
+  var html = '';
+  html += '<div class="tag2 center">MEMORISE</div>';
+  html += '<div class="timer" id="timer">' + left + '</div>';
+  html += '<div class="hint">Which number belongs to which name?</div>';
+  html += '<div class="book">';
+  for (var i = 0; i < book.length; i++) {
+    html += '<div><span>' + book[i].name + '</span><span>' + book[i].number + '</span></div>';
+  }
+  html += '</div>';
+  card.innerHTML = html;
+  timerId = setInterval(function () {
+    left = left - 1;
+    var t = document.getElementById('timer');
+    if (t) { t.textContent = left; }
+    if (left <= 0) {
+      clearInterval(timerId);
+      timerId = null;
+      showPlay();
+    }
+  }, 1000);
+}
+
+function showPlay() {
+  var names = shuffle(book);
+  var numbers = shuffle(book);
+  var html = '';
+  html += '<div class="status"><span>Matched: <span id="matched">0</span> / ' + PAIRS + '</span><span>Tap a name, then a number</span></div>';
+  html += '<div class="grid">';
+  html += '<div class="col-label">NAMES</div><div class="col-label">NUMBERS</div>';
+  for (var i = 0; i < PAIRS; i++) {
+    html += '<button class="tile" data-kind="name" data-value="' + names[i].name + '" onclick="tapTile(this)">' + names[i].name + '</button>';
+    html += '<button class="tile number" data-kind="number" data-value="' + numbers[i].number + '" onclick="tapTile(this)">' + numbers[i].number + '</button>';
+  }
+  html += '</div>';
+  card.innerHTML = html;
+}
+
+function numberFor(name) {
+  for (var i = 0; i < book.length; i++) {
+    if (book[i].name === name) { return book[i].number; }
+  }
+  return null;
+}
+
+function tapTile(btn) {
+  if (locked || btn.classList.contains('done')) { return; }
+  var kind = btn.getAttribute('data-kind');
+  if (kind === 'name') {
+    if (openName) { openName.classList.remove('open'); }
+    openName = btn;
+    btn.classList.add('open');
+  } else {
+    if (openNumber) { openNumber.classList.remove('open'); }
+    openNumber = btn;
+    btn.classList.add('open');
+  }
+  if (openName && openNumber) { checkPair(); }
+}
+
+function checkPair() {
+  locked = true;
+  tries = tries + 1;
+  var name = openName.getAttribute('data-value');
+  var number = openNumber.getAttribute('data-value');
+  var a = openName;
+  var b = openNumber;
+  openName = null;
+  openNumber = null;
+  if (numberFor(name) === number) {
+    a.classList.remove('open'); b.classList.remove('open');
+    a.classList.add('done'); b.classList.add('done');
+    a.disabled = true; b.disabled = true;
+    matched = matched + 1;
+    document.getElementById('matched').textContent = matched;
+    locked = false;
+    if (matched === PAIRS) { setTimeout(showEnd, 500); }
+  } else {
+    mistakes = mistakes + 1;
+    scorebox.textContent = 'Mistakes: ' + mistakes;
+    a.classList.add('bad'); b.classList.add('bad');
+    setTimeout(function () {
+      a.classList.remove('open', 'bad');
+      b.classList.remove('open', 'bad');
+      locked = false;
+    }, 700);
+  }
+}
+
+function showEnd() {
+  var msg = '';
+  if (mistakes === 0) { msg = 'Perfect memory! Six contacts, no mistakes.'; }
+  else if (mistakes <= 2) { msg = 'Very good. Almost a walking phonebook.'; }
+  else if (mistakes <= 5) { msg = 'Not bad \u2014 but you would not want 120 contacts this way.'; }
+  else { msg = 'Hard, right? Nobody remembers numbers by heart any more.'; }
+  var html = '';
+  html += '<div class="center">';
+  html += '<div class="tag2">FINISHED</div>';
+  html += '<div class="big">' + mistakes + '</div>';
+  html += '<div class="msg">mistake' + (mistakes === 1 ? '' : 's') + ' in ' + tries + ' tries.<br>' + msg + '</div>';
+  html += '<div class="punch"><b>Today\u2019s lecture:</b> a Python <b>dictionary</b> stores every name with its number, finds any of them with one line, and never forgets \u2014 whether it holds 6 contacts or 6 million.</div>';
+  html += '<button class="go" onclick="showStart()">PLAY AGAIN</button>';
+  html += '</div>';
+  card.innerHTML = html;
+}
+
+showStart();
+</script>
+</body>
+</html>
