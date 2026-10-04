@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pizza Counter — Lecture 15</title>
+<style>
+  :root { --navy:#1F3A5F; --navy-dark:#16283F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px 2px; }
+  .top .brand { font-weight:800; letter-spacing:1px; font-size:14px; } .top .brand span { color:var(--orange-light); }
+  .top .score { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .center { text-align:center; }
+  .tag2 { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:4px; }
+  .start-title { font-size:26px; font-weight:900; color:var(--navy); margin-bottom:8px; }
+  .rules { text-align:left; margin:16px 0 20px 0; padding-left:18px; font-size:15px; line-height:1.7; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; }
+  .go.navy { background:var(--navy); }
+  .progress { display:flex; gap:6px; margin-bottom:12px; } .progress div { flex:1; height:6px; border-radius:3px; background:var(--border); } .progress div.done { background:var(--orange); }
+  .speech { background:var(--light); border:2px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:16px; line-height:1.5; }
+  .speech b { color:var(--navy); }
+  .field { margin-bottom:12px; }
+  .field .lbl { font-size:11px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--border); background:#fff; color:var(--navy); border-radius:999px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .opt.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .opt.good { background:var(--green-tint); color:var(--green); border-color:var(--green); }
+  .opt.bad { background:var(--red-tint); color:var(--red); border-color:var(--red); }
+  .note { font-size:12px; color:#5B6472; margin-top:4px; }
+  .feedback { display:none; border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.5; font-weight:600; margin-top:10px; }
+  .feedback.good { display:block; background:var(--green-tint); color:var(--green); }
+  .feedback.bad { display:block; background:var(--red-tint); color:var(--red); }
+  .big { font-size:44px; font-weight:900; color:var(--navy); margin:10px 0; }
+  .msg { font-size:16px; margin-bottom:14px; line-height:1.5; }
+  .punch { background:var(--light); border-left:4px solid var(--orange); border-radius:8px; padding:12px 14px; font-size:14px; text-align:left; margin-bottom:18px; line-height:1.55; }
+  .punch b { color:var(--navy); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">PIZZA <span>COUNTER</span></div><div class="score" id="scorebox">Mistakes: 0</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var SIZES = ["Small", "Medium", "Large"];
+var CRUSTS = ["Regular", "Thin"];
+var TOPPINGS = ["Cheese", "Onion", "Capsicum", "Corn", "Paneer", "Olives"];
+var EXTRAS = ["cut: square", "spice: high", "sauce: extra"];
+var orders = [
+  { say: "One <b>medium</b> please, with <b>corn</b> and <b>cheese</b>.", size: "Medium", crust: "Regular", toppings: ["Cheese", "Corn"], extras: [] },
+  { say: "A <b>large thin crust</b>, just <b>paneer</b>. And <b>cut it square</b>.", size: "Large", crust: "Thin", toppings: ["Paneer"], extras: ["cut: square"] },
+  { say: "<b>Small</b>, nothing on it. Plain.", size: "Small", crust: "Regular", toppings: [], extras: [] },
+  { say: "<b>Large</b>, <b>onion, capsicum, olives, corn</b> \u2014 and make it <b>extra spicy</b>.", size: "Large", crust: "Regular", toppings: ["Onion", "Capsicum", "Olives", "Corn"], extras: ["spice: high"] },
+  { say: "<b>Medium thin</b>, <b>cheese</b> and <b>olives</b>, <b>extra sauce</b>, <b>square cut</b>.", size: "Medium", crust: "Thin", toppings: ["Cheese", "Olives"], extras: ["sauce: extra", "cut: square"] },
+  { say: "Hi, I\u2019d like <b>onion</b> and <b>paneer</b> on a <b>regular</b> base.", size: null, crust: "Regular", toppings: ["Onion", "Paneer"], extras: [], trap: "size" }
+];
+var current = 0, mistakes = 0;
+var sel = { size: null, crust: "Regular", toppings: [], extras: [] };
+var card = document.getElementById('card'), scorebox = document.getElementById('scorebox');
+
+function showStart() {
+  current = 0; mistakes = 0; scorebox.textContent = 'Mistakes: 0';
+  card.innerHTML = '<div class="center"><div class="tag2">LECTURE 15 \u00B7 FUNCTIONS</div><div class="start-title">Six customers.<br>One order form.</div></div>' +
+    '<ol class="rules"><li>Read what the customer says</li><li>Fill the form: size, crust, toppings, extras</li><li>Crust is <b>Regular</b> unless they say otherwise. Toppings can be none or many.</li><li>Tap SEND. Fewest mistakes wins.</li></ol>' +
+    '<button class="go" onclick="showOrder()">START</button>';
+}
+function pillRow(kind, options, multi) {
+  var html = '<div class="opts">';
+  for (var i = 0; i < options.length; i++) {
+    var on = multi ? sel[kind].indexOf(options[i]) >= 0 : sel[kind] === options[i];
+    html += '<button class="opt ' + (on ? 'on' : '') + '" data-kind="' + kind + '" data-val="' + options[i] + '" onclick="toggle(this)">' + options[i] + '</button>';
+  }
+  return html + '</div>';
+}
+function showOrder() {
+  var o = orders[current];
+  sel = { size: null, crust: "Regular", toppings: [], extras: [] };
+  var html = '<div class="progress">';
+  for (var i = 0; i < orders.length; i++) { html += '<div class="' + (i < current ? 'done' : '') + '"></div>'; }
+  html += '</div><div class="tag2">CUSTOMER ' + (current + 1) + ' OF ' + orders.length + '</div>';
+  html += '<div class="speech">\u201C' + o.say + '\u201D</div>';
+  html += '<div class="field"><div class="lbl">SIZE \u2014 MUST CHOOSE ONE</div>' + pillRow('size', SIZES, false) + '</div>';
+  html += '<div class="field"><div class="lbl">CRUST \u2014 USUALLY REGULAR</div>' + pillRow('crust', CRUSTS, false) + '</div>';
+  html += '<div class="field"><div class="lbl">TOPPINGS \u2014 NONE OR MANY</div>' + pillRow('toppings', TOPPINGS, true) + '</div>';
+  html += '<div class="field"><div class="lbl">EXTRAS \u2014 NAMED OPTIONS</div>' + pillRow('extras', EXTRAS, true) + '</div>';
+  html += '<button class="go navy" id="send" onclick="send()">SEND ORDER</button><div class="feedback" id="feedback"></div>';
+  card.innerHTML = html;
+}
+function toggle(btn) {
+  var kind = btn.getAttribute('data-kind'), val = btn.getAttribute('data-val');
+  if (kind === 'toppings' || kind === 'extras') {
+    var i = sel[kind].indexOf(val);
+    if (i >= 0) { sel[kind].splice(i, 1); btn.classList.remove('on'); } else { sel[kind].push(val); btn.classList.add('on'); }
+  } else {
+    sel[kind] = val;
+    var all = card.querySelectorAll('.opt[data-kind="' + kind + '"]');
+    for (var j = 0; j < all.length; j++) { all[j].classList.remove('on'); }
+    btn.classList.add('on');
+  }
+}
+function sameSet(a, b) {
+  if (a.length !== b.length) { return false; }
+  for (var i = 0; i < a.length; i++) { if (b.indexOf(a[i]) < 0) { return false; } }
+  return true;
+}
+function send() {
+  var o = orders[current], fb = document.getElementById('feedback');
+  var problems = [];
+  if (o.trap === 'size') {
+    if (sel.size !== null) { problems.push('The customer never said a size \u2014 you must ask. Size is required; you cannot guess it.'); }
+  } else if (sel.size !== o.size) { problems.push('Size should be ' + o.size + ' \u2014 size is required and must be what they said.'); }
+  if (sel.crust !== o.crust) { problems.push('Crust should be ' + o.crust + (o.crust === 'Regular' ? ' \u2014 they did not ask for thin, so the usual value stays.' : ' \u2014 they asked for it.')); }
+  if (!sameSet(sel.toppings, o.toppings)) { problems.push('Toppings should be: ' + (o.toppings.length ? o.toppings.join(', ') : 'none') + '.'); }
+  if (!sameSet(sel.extras, o.extras)) { problems.push('Extras should be: ' + (o.extras.length ? o.extras.join(', ') : 'none') + '.'); }
+  if (o.trap === 'size' && sel.size === null && problems.length === 0) {
+    fb.className = 'feedback good'; fb.textContent = 'Right \u2014 you cannot send this one. Size is required and they never gave it. The counter asks "which size?"';
+  } else if (problems.length === 0) {
+    fb.className = 'feedback good'; fb.textContent = 'Order correct!';
+  } else {
+    mistakes = mistakes + problems.length; scorebox.textContent = 'Mistakes: ' + mistakes;
+    fb.className = 'feedback bad'; fb.textContent = problems.join(' ');
+  }
+  var btns = card.querySelectorAll('.opt'); for (var i = 0; i < btns.length; i++) { btns[i].disabled = true; }
+  var sendBtn = document.getElementById('send');
+  sendBtn.textContent = current === orders.length - 1 ? 'SEE MY SCORE' : 'NEXT CUSTOMER';
+  sendBtn.onclick = function () { current = current + 1; if (current < orders.length) { showOrder(); } else { showEnd(); } };
+}
+function showEnd() {
+  var msg = mistakes === 0 ? 'Perfect counter work. Not one wrong pizza.' : mistakes <= 3 ? 'Good. A couple of pizzas went back to the kitchen.' : 'Busy day. Several pizzas went back.';
+  card.innerHTML = '<div class="center"><div class="tag2">FINISHED</div><div class="big">' + mistakes + '</div><div class="msg">mistake' + (mistakes === 1 ? '' : 's') + '. ' + msg + '</div>' +
+    '<div class="punch"><b>Today\u2019s lecture:</b> the form was a function. <b>Size</b> had to be given \u2014 a required parameter. <b>Crust</b> was Regular unless said \u2014 a default. <b>Toppings</b> could be none or many \u2014 *args. <b>Extras</b> were named options \u2014 **kwargs.</div>' +
+    '<button class="go" onclick="showStart()">PLAY AGAIN</button></div>';
+}
+showStart();
+</script>
+</body>
+</html>

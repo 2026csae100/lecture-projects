@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nearest Wins — Lecture 16</title>
+<style>
+  :root { --navy:#1F3A5F; --navy-dark:#16283F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px 2px; }
+  .top .brand { font-weight:800; letter-spacing:1px; font-size:14px; } .top .brand span { color:var(--orange-light); }
+  .top .score { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .center { text-align:center; }
+  .tag2 { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:4px; }
+  .start-title { font-size:26px; font-weight:900; color:var(--navy); margin-bottom:8px; }
+  .rules { text-align:left; margin:16px 0 20px 0; padding-left:18px; font-size:15px; line-height:1.7; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; }
+  .progress { display:flex; gap:6px; margin-bottom:12px; } .progress div { flex:1; height:6px; border-radius:3px; background:var(--border); } .progress div.done { background:var(--orange); }
+  .q { font-size:16px; font-weight:700; color:var(--navy); margin-bottom:12px; line-height:1.4; }
+  .box { border:2px solid var(--border); border-radius:12px; padding:10px; margin-top:8px; background:#fff; }
+  .box .name { font-size:11px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  .box.here { border-color:var(--navy); background:var(--light); }
+  .box.here .name::after { content: "  \u2014 YOU ARE HERE"; color:var(--navy); }
+  .items { display:flex; flex-wrap:wrap; gap:6px; }
+  .item { border:2px solid var(--border); background:#fff; color:var(--navy); border-radius:999px; padding:6px 12px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .item.good { background:var(--green-tint); color:var(--green); border-color:var(--green); }
+  .item.bad { background:var(--red-tint); color:var(--red); border-color:var(--red); }
+  .item:disabled { cursor:default; }
+  .feedback { display:none; border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.5; font-weight:600; margin-top:12px; }
+  .feedback.good { display:block; background:var(--green-tint); color:var(--green); }
+  .feedback.bad { display:block; background:var(--red-tint); color:var(--red); }
+  .next { display:none; width:100%; margin-top:12px; background:var(--navy); color:#fff; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:800; cursor:pointer; }
+  .big { font-size:44px; font-weight:900; color:var(--navy); margin:10px 0; }
+  .msg { font-size:16px; margin-bottom:14px; line-height:1.5; }
+  .punch { background:var(--light); border-left:4px solid var(--orange); border-radius:8px; padding:12px 14px; font-size:14px; text-align:left; margin-bottom:18px; line-height:1.55; }
+  .punch b { color:var(--navy); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">NEAREST <span>WINS</span></div><div class="score" id="scorebox">Mistakes: 0</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+// Each round: nested places (outer first), items in each, where you stand, what you want.
+// An item is written "name@place". The nearest reachable one is the answer: your room, then the enclosing rooms outward. Never a sibling room.
+var rounds = [
+  { places: [["Building lobby", ["key", "umbrella"]], ["Floor 2", ["towel"]], ["Room 201", ["key", "chair"]]], here: 2, want: "key",
+    answer: "key@Room 201", why: "There is a key in your own room \u2014 nearest wins. The lobby key is further out." },
+  { places: [["Building lobby", ["key", "umbrella"]], ["Floor 2", ["towel"]], ["Room 201", ["key", "chair"]]], here: 2, want: "towel",
+    answer: "towel@Floor 2", why: "No towel in the room, so look on your floor. Found." },
+  { places: [["Building lobby", ["key", "umbrella"]], ["Floor 2", ["towel"]], ["Room 201", ["key", "chair"]]], here: 2, want: "umbrella",
+    answer: "umbrella@Building lobby", why: "Not in the room, not on the floor \u2014 the lobby has one. Search outward until you find it." },
+  { places: [["Building lobby", ["chair"]], ["Floor 3", ["towel", "chair"]], ["Room 301", ["lamp"]], ["Room 302", ["chair", "key"]]], here: 2, want: "chair", siblings: [3],
+    answer: "chair@Floor 3", why: "Room 302 has a chair, but you are in Room 301 \u2014 another room is out of reach. The floor\u2019s chair is the nearest you can reach." },
+  { places: [["Building lobby", ["chair"]], ["Floor 3", ["towel", "chair"]], ["Room 301", ["lamp"]], ["Room 302", ["chair", "key"]]], here: 2, want: "key", siblings: [3],
+    answer: null, why: "No key in your room, your floor or the lobby. The only key is in Room 302, and you cannot reach into another room. Correct answer: nowhere." },
+  { places: [["Building lobby", ["pen"]], ["Floor 1", ["pen"]], ["Room 101", ["pen"]]], here: 1, want: "pen",
+    answer: "pen@Floor 1", why: "You are standing on the floor, not in the room. The floor\u2019s pen is nearest. The room\u2019s pen is inside a room you are not in." },
+  { places: [["Building lobby", ["clock"]], ["Floor 1", []], ["Room 101", []]], here: 2, want: "clock",
+    answer: "clock@Building lobby", why: "Room empty, floor empty \u2014 keep going outward. The lobby has it." },
+  { places: [["Building lobby", ["water"]], ["Floor 4", ["water"]], ["Room 404", []]], here: 0, want: "water",
+    answer: "water@Building lobby", why: "You are in the lobby itself. Its water is right there; you never look inward into floors or rooms." }
+];
+var current = 0, mistakes = 0;
+var card = document.getElementById('card'), scorebox = document.getElementById('scorebox');
+function showStart() {
+  current = 0; mistakes = 0; scorebox.textContent = 'Mistakes: 0';
+  card.innerHTML = '<div class="center"><div class="tag2">LECTURE 16 \u00B7 SCOPE</div><div class="start-title">Which one<br>do you pick up?</div></div>' +
+    '<ol class="rules"><li>A building with floors and rooms, each with some items</li><li>You stand in one place. The question names an item.</li><li><b>Nearest reachable wins:</b> your own place first, then outward. You can never reach into a room you are not in.</li><li>If no reachable place has it, tap NOWHERE.</li></ol>' +
+    '<button class="go" onclick="showRound()">START</button>';
+}
+function showRound() {
+  var r = rounds[current];
+  var html = '<div class="progress">';
+  for (var i = 0; i < rounds.length; i++) { html += '<div class="' + (i < current ? 'done' : '') + '"></div>'; }
+  html += '</div><div class="tag2">ROUND ' + (current + 1) + ' OF ' + rounds.length + '</div>';
+  html += '<div class="q">You are in <u>' + r.places[r.here][0] + '</u>. You need a <u>' + r.want + '</u>. Tap the one you pick up.</div>';
+  var open = 0;
+  for (var p = 0; p < r.places.length; p++) {
+    var isSibling = r.siblings && r.siblings.indexOf(p) >= 0;
+    if (isSibling) { html += '</div>'; open = open - 1; }
+    html += '<div class="box ' + (p === r.here ? 'here' : '') + '"><div class="name">' + r.places[p][0] + '</div><div class="items">';
+    for (var k = 0; k < r.places[p][1].length; k++) {
+      var id = r.places[p][1][k] + '@' + r.places[p][0];
+      html += '<button class="item" data-id="' + id + '" onclick="pick(this)">' + r.places[p][1][k] + '</button>';
+    }
+    if (r.places[p][1].length === 0) { html += '<span style="font-size:12px;color:#5B6472">(nothing here)</span>'; }
+    html += '</div>';
+    open = open + 1;
+  }
+  for (var c = 0; c < open; c++) { html += '</div>'; }
+  html += '<button class="item" data-id="nowhere" onclick="pick(this)" style="margin-top:10px">NOWHERE \u2014 cannot be reached</button>';
+  html += '<div class="feedback" id="feedback"></div><button class="next" id="next" onclick="nextRound()">' + (current === rounds.length - 1 ? 'SEE MY SCORE' : 'NEXT ROUND') + '</button>';
+  card.innerHTML = html;
+}
+function pick(btn) {
+  var r = rounds[current], chosen = btn.getAttribute('data-id'), want = r.answer === null ? 'nowhere' : r.answer;
+  var all = card.querySelectorAll('.item');
+  for (var i = 0; i < all.length; i++) { all[i].disabled = true; if (all[i].getAttribute('data-id') === want) { all[i].classList.add('good'); } }
+  var fb = document.getElementById('feedback');
+  if (chosen === want) { fb.className = 'feedback good'; fb.textContent = 'Right. ' + r.why; }
+  else { mistakes = mistakes + 1; scorebox.textContent = 'Mistakes: ' + mistakes; btn.classList.add('bad'); fb.className = 'feedback bad'; fb.textContent = 'Not that one. ' + r.why; }
+  document.getElementById('next').style.display = 'block';
+}
+function nextRound() { current = current + 1; if (current < rounds.length) { showRound(); } else { showEnd(); } }
+function showEnd() {
+  var msg = mistakes === 0 ? 'Perfect. You never reached into the wrong room.' : mistakes <= 2 ? 'Good. The sibling-room rounds are the tricky ones.' : 'Rooms inside rooms are confusing \u2014 the lecture draws them out.';
+  card.innerHTML = '<div class="center"><div class="tag2">FINISHED</div><div class="big">' + mistakes + '</div><div class="msg">mistake' + (mistakes === 1 ? '' : 's') + '. ' + msg + '</div>' +
+    '<div class="punch"><b>Today\u2019s lecture:</b> Python finds a variable the same way. Look in the current function first (<b>local</b>), then the function around it (<b>enclosing</b>), then the file (<b>global</b>), then Python\u2019s own names (<b>built-in</b>) \u2014 and never inside another function.</div>' +
+    '<button class="go" onclick="showStart()">PLAY AGAIN</button></div>';
+}
+showStart();
+</script>
+</body>
+</html>
