@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Factory — Lecture 22</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .order { background:var(--navy); color:#fff; border-radius:12px; padding:12px 14px; margin-bottom:12px; }
+  .order small { display:block; font-size:11px; font-weight:800; letter-spacing:2px; color:var(--orange-light); margin-bottom:4px; }
+  .order b { font-size:18px; }
+  .group { margin-bottom:10px; }
+  .group .label { font-size:12px; font-weight:800; letter-spacing:1px; color:#5B6472; margin-bottom:5px; }
+  .opts { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .opts.three { grid-template-columns:repeat(3,1fr); }
+  .opt { border:2px solid var(--border); background:var(--light); border-radius:10px; padding:10px 4px; font-size:14px; font-weight:700; color:var(--navy); cursor:pointer; }
+  .opt.on { border-color:var(--orange); background:#FDF1E4; }
+  .make { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:18px; font-weight:800; cursor:pointer; margin-top:6px; }
+  .msg { min-height:44px; margin-top:10px; border-radius:10px; padding:10px 12px; font-size:14px; font-weight:700; }
+  .msg.good { background:var(--green-tint); color:var(--green); }
+  .msg.bad { background:var(--red-tint); color:var(--red); }
+  .score { display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#5B6472; margin-top:8px; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; color:var(--navy); text-align:center; margin:6px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">ORDER <span>FACTORY</span></div><div class="clock" id="clock">60 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var colours = ["Red", "Blue", "Green", "Yellow"];
+var sizes = ["Small", "Medium", "Large"];
+var labels = ["Books", "Toys", "Shoes", "Tools"];
+var order = null, chosen = { colour: null, size: null, label: null };
+var made = 0, rejected = 0, secondsLeft = 60, timer = null, message = "", good = true;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+
+function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+function newOrder() {
+  order = { colour: pick(colours), size: pick(sizes), label: pick(labels) };
+  chosen = { colour: null, size: null, label: null };
+}
+function showStart() {
+  clock.textContent = "60 s";
+  card.innerHTML = '<div class="tag">LECTURE 22 · CONSTRUCTORS</div><h1>Make the boxes on order</h1>' +
+    '<ol class="rules"><li>Each order asks for a colour, a size and a label.</li>' +
+    '<li>Set all three settings, then press <b>MAKE</b>.</li>' +
+    '<li>A box made with a missing or wrong setting is rejected.</li>' +
+    '<li>Make as many correct boxes as you can in 60 seconds.</li></ol>' +
+    '<button class="go" onclick="startGame()">START THE FACTORY</button>';
+}
+function startGame() {
+  made = 0; rejected = 0; secondsLeft = 60; message = ""; newOrder(); draw();
+  timer = setInterval(function () {
+    secondsLeft = secondsLeft - 1;
+    clock.textContent = secondsLeft + " s";
+    if (secondsLeft <= 0) { clearInterval(timer); finish(); }
+  }, 1000);
+}
+function group(title, key, list, three) {
+  var html = '<div class="group"><div class="label">' + title + '</div><div class="opts' + (three ? ' three' : '') + '">';
+  for (var i = 0; i < list.length; i++) {
+    var on = chosen[key] === list[i] ? ' on' : '';
+    html += '<button class="opt' + on + '" onclick="choose(\'' + key + '\', \'' + list[i] + '\')">' + list[i] + '</button>';
+  }
+  return html + '</div></div>';
+}
+function draw() {
+  clock.textContent = secondsLeft + " s";
+  var html = '<div class="order"><small>NEW ORDER</small><b>' + order.colour + ' · ' + order.size + ' · "' + order.label + '"</b></div>';
+  html += group("COLOUR", "colour", colours, false) + group("SIZE", "size", sizes, true) + group("LABEL", "label", labels, false);
+  html += '<button class="make" onclick="makeBox()">MAKE</button>';
+  html += '<div class="msg ' + (message ? (good ? 'good' : 'bad') : '') + '">' + message + '</div>';
+  html += '<div class="score"><span>Made: ' + made + '</span><span>Rejected: ' + rejected + '</span></div>';
+  card.innerHTML = html;
+}
+function choose(key, value) { chosen[key] = value; draw(); }
+function makeBox() {
+  var missing = [];
+  var keys = ["colour", "size", "label"];
+  for (var i = 0; i < keys.length; i++) { if (chosen[keys[i]] === null) { missing.push(keys[i]); } }
+  if (missing.length > 0) {
+    rejected = rejected + 1; good = false;
+    if (missing.length === 1) { message = "Rejected: the " + missing[0] + " was not set."; }
+    else { message = "Rejected: the " + missing.slice(0, -1).join(", ") + " and " + missing[missing.length - 1] + " were not set."; }
+  } else if (chosen.colour !== order.colour || chosen.size !== order.size || chosen.label !== order.label) {
+    rejected = rejected + 1; good = false;
+    message = "Rejected: the box does not match the order.";
+  } else {
+    made = made + 1; good = true;
+    message = "Box made: " + order.colour + ", " + order.size + ', "' + order.label + '".';
+  }
+  newOrder(); draw();
+}
+function finish() {
+  card.innerHTML = '<div class="tag">END OF SHIFT</div><div class="big">' + made + ' boxes made</div>' +
+    '<p style="text-align:center">Rejected: ' + rejected + '</p>' +
+    '<div class="lesson">No box leaves the factory until every setting is filled in. A constructor does the same for objects: Student("Arjun", 101, 72) cannot run without its values, so no object is ever made half set up.</div>' +
+    '<button class="go" onclick="showStart()">PLAY AGAIN</button>';
+}
+showStart();
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Does What? — Lecture 25</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .machine { background:var(--navy); color:#fff; border-radius:12px; padding:14px; text-align:center; margin-bottom:12px; }
+  .machine .icon { font-size:48px; line-height:1.2; }
+  .machine .name { font-size:20px; font-weight:800; margin-top:4px; }
+  .start { display:inline-block; margin-top:10px; background:var(--orange); color:#fff; font-weight:900; letter-spacing:2px; border-radius:999px; padding:8px 22px; font-size:15px; }
+  .ask { font-size:13px; font-weight:800; letter-spacing:1px; color:#5B6472; margin-bottom:6px; }
+  .opt { display:block; width:100%; text-align:left; border:2px solid var(--border); background:var(--light); border-radius:10px; padding:13px 12px; font-size:16px; font-weight:700; color:var(--navy); cursor:pointer; margin-bottom:8px; }
+  .msg { min-height:44px; margin-top:4px; border-radius:10px; padding:10px 12px; font-size:14px; font-weight:700; }
+  .msg.good { background:var(--green-tint); color:var(--green); }
+  .msg.bad { background:var(--red-tint); color:var(--red); }
+  .score { display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#5B6472; margin-top:8px; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; color:var(--navy); text-align:center; margin:6px 0; }
+  .workers { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .worker { border:2px solid var(--border); background:var(--light); border-radius:12px; padding:12px 4px; font-size:15px; font-weight:800; color:var(--navy); cursor:pointer; text-align:center; }
+  .worker .icon { font-size:30px; display:block; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">WHO DOES <span>WHAT?</span></div><div class="clock" id="clock">60 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var workers = [
+  { key: "cashier", icon: "💰", name: "Cashier", holds: "the cash box and the bill book" },
+  { key: "chef", icon: "👩‍🍳", name: "Chef", holds: "the stove and the recipes" },
+  { key: "waiter", icon: "🍽️", name: "Waiter", holds: "the tables and the order pad" }
+];
+var jobs = [
+  ["Take payment for table 2", "cashier"], ["Give change for ₹500", "cashier"], ["Print the bill", "cashier"],
+  ["Count the money at closing time", "cashier"], ["Accept a UPI payment", "cashier"],
+  ["Cook a masala dosa", "chef"], ["Make the sambar", "chef"], ["Fry the samosas", "chef"],
+  ["Check if the paneer is fresh", "chef"], ["Make the chutney spicier", "chef"],
+  ["Take the order at table 4", "waiter"], ["Serve the coffee", "waiter"], ["Clear table 6", "waiter"],
+  ["Bring water to new guests", "waiter"], ["Show guests to a free table", "waiter"]
+];
+var current = null, last = -1;
+var correct = 0, wrong = 0, secondsLeft = 60, timer = null, message = "", good = true;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+
+function workerByKey(key) {
+  for (var i = 0; i < workers.length; i++) {
+    if (workers[i].key === key) return workers[i];
+  }
+  return null;
+}
+
+function newRound() {
+  var k = Math.floor(Math.random() * jobs.length);
+  while (k === last) k = Math.floor(Math.random() * jobs.length);
+  last = k;
+  current = jobs[k];
+}
+
+function intro() {
+  clock.textContent = "60 s";
+  card.innerHTML = '<div class="tag">LECTURE 25 · OPENER</div><h1>Who Does What?</h1>' +
+    '<p>A busy café has three workers. Jobs keep arriving.</p>' +
+    '<ul class="rules"><li>💰 The <b>cashier</b> has the cash box</li><li>👩‍🍳 The <b>chef</b> has the stove</li>' +
+    '<li>🍽️ The <b>waiter</b> has the tables</li><li>Send each job to the right worker. You have 60 seconds</li></ul>' +
+    '<button class="go" id="begin">BEGIN</button>';
+  document.getElementById("begin").onclick = begin;
+}
+
+function begin() {
+  correct = 0; wrong = 0; secondsLeft = 60; message = ""; last = -1;
+  if (timer) clearInterval(timer);
+  timer = setInterval(function () {
+    secondsLeft = secondsLeft - 1;
+    clock.textContent = secondsLeft + " s";
+    if (secondsLeft <= 0) { clearInterval(timer); finish(); }
+  }, 1000);
+  newRound();
+  draw();
+}
+
+function draw() {
+  var html = '<div class="machine"><div class="name" id="job">' + current[0] + '</div></div><div class="ask">WHOSE JOB IS IT?</div><div class="workers">';
+  for (var i = 0; i < workers.length; i++) {
+    html = html + '<button class="worker" data-k="' + workers[i].key + '"><span class="icon">' + workers[i].icon + '</span>' + workers[i].name + '</button>';
+  }
+  html = html + '</div><div class="msg ' + (good ? "good" : "bad") + '" id="msg">' + message + '</div>' +
+    '<div class="score"><span>Correct: ' + correct + '</span><span>Wrong: ' + wrong + '</span></div>';
+  card.innerHTML = html;
+  if (message === "") document.getElementById("msg").style.background = "transparent";
+  var buttons = card.querySelectorAll(".worker");
+  for (var j = 0; j < buttons.length; j++) {
+    buttons[j].onclick = function () { answer(this.getAttribute("data-k")); };
+  }
+}
+
+function answer(key) {
+  var right = workerByKey(current[1]);
+  if (key === current[1]) {
+    correct = correct + 1; good = true;
+    message = "Right — the " + right.name.toLowerCase() + " has " + right.holds + ".";
+  } else {
+    wrong = wrong + 1; good = false;
+    message = "No — that is the " + right.name.toLowerCase() + "'s job. The " + right.name.toLowerCase() + " has " + right.holds + ".";
+  }
+  newRound();
+  draw();
+}
+
+function finish() {
+  clock.textContent = "0 s";
+  card.innerHTML = '<div class="tag">TIME UP</div><h1>Your score</h1><div class="big">' + correct + ' correct</div>' +
+    '<p style="text-align:center">' + wrong + ' wrong</p>' +
+    '<div class="lesson">Each job went to the worker who holds what the job needs. Programs are built the same way: each method goes in the class that holds the data it needs.</div>' +
+    '<button class="go" id="again">PLAY AGAIN</button>';
+  document.getElementById("again").onclick = begin;
+}
+
+intro();
+</script>
+</body>
+</html>

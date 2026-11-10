@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet Care — Lecture 21</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .pet { border:2px solid var(--border); border-radius:14px; padding:10px 12px; margin-bottom:10px; background:var(--light); }
+  .pet.sad { border-color:var(--red); background:var(--red-tint); }
+  .head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .face { font-size:30px; }
+  .name { font-weight:800; color:var(--navy); font-size:16px; }
+  .mood { margin-left:auto; font-size:12px; font-weight:800; letter-spacing:1px; }
+  .mood.ok { color:var(--green); } .mood.bad { color:var(--red); }
+  .row { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#5B6472; margin:3px 0; }
+  .row span { width:100px; }
+  .bar { flex:1; height:10px; background:#fff; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+  .bar div { height:100%; }
+  .btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .btn { border:none; border-radius:10px; padding:11px; font-size:15px; font-weight:800; color:#fff; cursor:pointer; }
+  .feed { background:var(--orange); } .play { background:var(--navy); }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; color:var(--navy); text-align:center; margin:6px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">PET <span>CARE</span></div><div class="clock" id="clock">60 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+// one design for every pet: the same numbers and the same two buttons
+var pets = [];
+var timer = null, secondsLeft = 60, happySeconds = 0;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+
+function makePet(name, face, hungerRate, boredRate) {
+  return { name: name, face: face, hunger: 20, happiness: 80, hungerRate: hungerRate, boredRate: boredRate };
+}
+function isSad(p) { return p.hunger >= 80 || p.happiness <= 20; }
+function showStart() {
+  clock.textContent = "60 s";
+  card.innerHTML = '<div class="tag">LECTURE 21 · OBJECTS</div><h1>Keep three pets happy</h1>' +
+    '<ol class="rules"><li>Each pet has its own <b>hunger</b> and <b>happiness</b>.</li>' +
+    '<li>Hunger goes up and happiness goes down over time, at a different speed for each pet.</li>' +
+    '<li>Every pet has the same two buttons: <b>FEED</b> lowers hunger, <b>PLAY</b> raises happiness.</li>' +
+    '<li>A pet is sad when hunger reaches 80 or happiness falls to 20. Keep all three happy for 60 seconds.</li></ol>' +
+    '<button class="go" onclick="startGame()">START</button>';
+}
+function startGame() {
+  pets = [makePet("Bruno", "🐶", 3.0, 1.6), makePet("Kitty", "🐱", 1.6, 3.0), makePet("Polly", "🦜", 2.2, 2.2)];
+  secondsLeft = 60; happySeconds = 0; built = false;
+  draw();
+  timer = setInterval(step, 500);
+}
+function step() {
+  for (var i = 0; i < pets.length; i++) {
+    var p = pets[i];
+    p.hunger = Math.min(100, p.hunger + p.hungerRate);
+    p.happiness = Math.max(0, p.happiness - p.boredRate);
+  }
+  secondsLeft = secondsLeft - 0.5;
+  var allHappy = true;
+  for (var k = 0; k < pets.length; k++) { if (isSad(pets[k])) { allHappy = false; } }
+  if (allHappy) { happySeconds = happySeconds + 0.5; }
+  if (secondsLeft <= 0) { clearInterval(timer); finish(); return; }
+  draw();
+}
+function feed(i) { pets[i].hunger = Math.max(0, pets[i].hunger - 25); draw(); }
+function play(i) { pets[i].happiness = Math.min(100, pets[i].happiness + 25); draw(); }
+function build() {
+  var html = '';
+  for (var i = 0; i < pets.length; i++) {
+    var p = pets[i];
+    html += '<div class="pet" id="pet' + i + '"><div class="head"><div class="face">' + p.face + '</div><div class="name">' + p.name + '</div>' +
+      '<div class="mood ok" id="mood' + i + '">HAPPY</div></div>' +
+      '<div class="row"><span id="hl' + i + '"></span><div class="bar"><div id="hb' + i + '"></div></div></div>' +
+      '<div class="row"><span id="pl' + i + '"></span><div class="bar"><div id="pb' + i + '"></div></div></div>' +
+      '<div class="btns"><button class="btn feed" onclick="feed(' + i + ')">FEED</button><button class="btn play" onclick="play(' + i + ')">PLAY</button></div></div>';
+  }
+  card.innerHTML = html;
+  built = true;
+}
+var built = false;
+function draw() {
+  clock.textContent = Math.ceil(secondsLeft) + " s";
+  if (!built) { build(); }
+  for (var i = 0; i < pets.length; i++) {
+    var p = pets[i], sad = isSad(p);
+    document.getElementById("pet" + i).className = sad ? "pet sad" : "pet";
+    var mood = document.getElementById("mood" + i);
+    mood.className = sad ? "mood bad" : "mood ok";
+    mood.textContent = sad ? "SAD" : "HAPPY";
+    document.getElementById("hl" + i).textContent = "Hunger " + Math.round(p.hunger);
+    document.getElementById("pl" + i).textContent = "Happiness " + Math.round(p.happiness);
+    var hb = document.getElementById("hb" + i);
+    hb.style.width = p.hunger + "%"; hb.style.background = p.hunger >= 80 ? "#C62828" : "#E8842C";
+    var pb = document.getElementById("pb" + i);
+    pb.style.width = p.happiness + "%"; pb.style.background = p.happiness <= 20 ? "#C62828" : "#2E7D32";
+  }
+}
+function finish() {
+  clock.textContent = "0 s";
+  var happyAtEnd = 0;
+  for (var i = 0; i < pets.length; i++) { if (!isSad(pets[i])) { happyAtEnd = happyAtEnd + 1; } }
+  card.innerHTML = '<div class="tag">TIME UP</div><div class="big">' + happyAtEnd + ' / 3 happy</div>' +
+    '<p style="text-align:center">All three were happy together for ' + Math.round(happySeconds) + ' of the 60 seconds.</p>' +
+    '<div class="lesson">Every pet had the same buttons, but feeding Bruno never fed Kitty. Each pet kept its own numbers. In Python the design is a class, each pet is an object, the numbers are attributes and the buttons are methods.</div>' +
+    '<button class="go" onclick="showStart()">PLAY AGAIN</button>';
+}
+showStart();
+</script>
+</body>
+</html>

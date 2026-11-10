@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Same Button — Lecture 24</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .machine { background:var(--navy); color:#fff; border-radius:12px; padding:14px; text-align:center; margin-bottom:12px; }
+  .machine .icon { font-size:48px; line-height:1.2; }
+  .machine .name { font-size:20px; font-weight:800; margin-top:4px; }
+  .start { display:inline-block; margin-top:10px; background:var(--orange); color:#fff; font-weight:900; letter-spacing:2px; border-radius:999px; padding:8px 22px; font-size:15px; }
+  .ask { font-size:13px; font-weight:800; letter-spacing:1px; color:#5B6472; margin-bottom:6px; }
+  .opt { display:block; width:100%; text-align:left; border:2px solid var(--border); background:var(--light); border-radius:10px; padding:13px 12px; font-size:16px; font-weight:700; color:var(--navy); cursor:pointer; margin-bottom:8px; }
+  .msg { min-height:44px; margin-top:4px; border-radius:10px; padding:10px 12px; font-size:14px; font-weight:700; }
+  .msg.good { background:var(--green-tint); color:var(--green); }
+  .msg.bad { background:var(--red-tint); color:var(--red); }
+  .score { display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#5B6472; margin-top:8px; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; color:var(--navy); text-align:center; margin:6px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">SAME <span>BUTTON</span></div><div class="clock" id="clock">60 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var machines = [
+  { icon: "🧺", name: "Washing machine", does: "The drum fills with water and spins the clothes" },
+  { icon: "🚗", name: "Car", does: "The engine starts running" },
+  { icon: "🍲", name: "Microwave", does: "The plate turns and the food heats up" },
+  { icon: "💻", name: "Laptop", does: "The screen lights up and the system loads" },
+  { icon: "🌀", name: "Ceiling fan", does: "The blades begin to turn" },
+  { icon: "🎵", name: "Music player", does: "A song begins to play" },
+  { icon: "🏃", name: "Treadmill", does: "The belt starts moving under your feet" },
+  { icon: "🥤", name: "Mixer grinder", does: "The blades blend what is in the jar" },
+  { icon: "🖨️", name: "Printer", does: "A page comes out with ink on it" },
+  { icon: "⏱️", name: "Stopwatch", does: "The seconds start counting up" }
+];
+var current = null, options = [], last = -1;
+var correct = 0, wrong = 0, secondsLeft = 60, timer = null, message = "", good = true;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+
+function shuffle(list) {
+  for (var i = list.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = list[i]; list[i] = list[j]; list[j] = t;
+  }
+  return list;
+}
+
+function newRound() {
+  var k = Math.floor(Math.random() * machines.length);
+  while (k === last) k = Math.floor(Math.random() * machines.length);
+  last = k;
+  current = machines[k];
+  var others = [];
+  for (var i = 0; i < machines.length; i++) {
+    if (i !== k) others.push(machines[i].does);
+  }
+  others = shuffle(others);
+  options = shuffle([current.does, others[0], others[1]]);
+}
+
+function intro() {
+  clock.textContent = "60 s";
+  card.innerHTML = '<div class="tag">LECTURE 24 · OPENER</div><h1>Same Button</h1>' +
+    '<p>Every machine has a button called <b>START</b>.</p>' +
+    '<ul class="rules"><li>A machine appears</li><li>Tap what happens when you press START on that machine</li>' +
+    '<li>You have 60 seconds</li></ul>' +
+    '<button class="go" id="begin">BEGIN</button>';
+  document.getElementById("begin").onclick = begin;
+}
+
+function begin() {
+  correct = 0; wrong = 0; secondsLeft = 60; message = ""; last = -1;
+  if (timer) clearInterval(timer);
+  timer = setInterval(function () {
+    secondsLeft = secondsLeft - 1;
+    clock.textContent = secondsLeft + " s";
+    if (secondsLeft <= 0) { clearInterval(timer); finish(); }
+  }, 1000);
+  newRound();
+  draw();
+}
+
+function draw() {
+  var html = '<div class="machine"><div class="icon">' + current.icon + '</div><div class="name">' + current.name + '</div>' +
+    '<div class="start">START</div></div><div class="ask">WHAT HAPPENS?</div>';
+  for (var i = 0; i < options.length; i++) {
+    html = html + '<button class="opt" data-i="' + i + '">' + options[i] + '</button>';
+  }
+  html = html + '<div class="msg ' + (good ? "good" : "bad") + '" id="msg">' + message + '</div>' +
+    '<div class="score"><span>Correct: ' + correct + '</span><span>Wrong: ' + wrong + '</span></div>';
+  card.innerHTML = html;
+  if (message === "") document.getElementById("msg").style.background = "transparent";
+  var buttons = card.querySelectorAll(".opt");
+  for (var j = 0; j < buttons.length; j++) {
+    buttons[j].onclick = function () { answer(options[Number(this.getAttribute("data-i"))]); };
+  }
+}
+
+function answer(choice) {
+  if (choice === current.does) {
+    correct = correct + 1; good = true;
+    message = "Right — START on the " + current.name.toLowerCase() + ": " + current.does.toLowerCase() + ".";
+  } else {
+    wrong = wrong + 1; good = false;
+    message = "No — on the " + current.name.toLowerCase() + ", START means: " + current.does.toLowerCase() + ".";
+  }
+  newRound();
+  draw();
+}
+
+function finish() {
+  clock.textContent = "0 s";
+  card.innerHTML = '<div class="tag">TIME UP</div><h1>Your score</h1><div class="big">' + correct + ' correct</div>' +
+    '<p style="text-align:center">' + wrong + ' wrong</p>' +
+    '<div class="lesson">Every machine had the same button, START. Each machine did its own thing with it. One name, many behaviours: in Python this is called polymorphism.</div>' +
+    '<button class="go" id="again">PLAY AGAIN</button>';
+  document.getElementById("again").onclick = begin;
+}
+
+intro();
+</script>
+</body>
+</html>

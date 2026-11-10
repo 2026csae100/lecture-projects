@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kept or New? — Lecture 23</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .plain { background:var(--light); border:2px solid var(--border); border-radius:12px; padding:10px 14px; margin-bottom:10px; }
+  .plain small, .upgrade small { display:block; font-size:11px; font-weight:800; letter-spacing:2px; color:#5B6472; margin-bottom:4px; }
+  .plain b { color:var(--navy); font-size:16px; }
+  .plain ul { padding-left:18px; font-size:14px; line-height:1.6; margin-top:4px; }
+  .upgrade { background:var(--navy); color:#fff; border-radius:12px; padding:12px 14px; margin-bottom:12px; }
+  .upgrade small { color:var(--orange-light); }
+  .upgrade .part { font-size:20px; font-weight:800; margin-top:4px; }
+  .btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn { border:none; border-radius:12px; padding:16px; font-size:18px; font-weight:800; cursor:pointer; color:#fff; }
+  .kept { background:var(--navy); border:2px solid var(--navy); }
+  .new { background:var(--orange); }
+  .msg { min-height:44px; margin-top:10px; border-radius:10px; padding:10px 12px; font-size:14px; font-weight:700; }
+  .msg.good { background:var(--green-tint); color:var(--green); }
+  .msg.bad { background:var(--red-tint); color:var(--red); }
+  .score { display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#5B6472; margin-top:8px; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; color:var(--navy); text-align:center; margin:6px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">KEPT <span>OR NEW?</span></div><div class="clock" id="clock">60 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+// each pair: a plain item, its parts, and the upgraded item's parts with kept (true) or new (false)
+var pairs = [
+  { plain: "Plain Dosa", parts: ["Rice batter", "Cooked on a tawa", "Folded in half", "Served with chutney"],
+    upgrade: "Masala Dosa", up: [["Rice batter", true], ["Cooked on a tawa", true], ["Potato filling", false], ["Folded in half", true], ["Served with chutney", true], ["Onion in the filling", false]] },
+  { plain: "Basic Phone", parts: ["Make calls", "Send SMS", "Battery", "Contacts list"],
+    upgrade: "Smartphone", up: [["Make calls", true], ["Send SMS", true], ["Touch screen", false], ["Contacts list", true], ["Camera", false], ["App store", false], ["Battery", true]] },
+  { plain: "Bicycle", parts: ["Two wheels", "Handlebar", "Brakes", "Seat"],
+    upgrade: "Electric Bicycle", up: [["Two wheels", true], ["Motor", false], ["Handlebar", true], ["Charging port", false], ["Brakes", true], ["Seat", true]] },
+  { plain: "Savings Account", parts: ["Account holder", "Balance", "Deposit money", "Withdraw money"],
+    upgrade: "Student Savings Account", up: [["Account holder", true], ["Balance", true], ["College ID", false], ["Deposit money", true], ["Zero minimum balance", false], ["Withdraw money", true]] },
+  { plain: "Plain Tea", parts: ["Tea leaves", "Water", "Milk", "Sugar"],
+    upgrade: "Masala Chai", up: [["Tea leaves", true], ["Ginger", false], ["Water", true], ["Cardamom", false], ["Milk", true], ["Sugar", true]] },
+  { plain: "Classroom", parts: ["Benches", "Board", "Teacher's desk", "Fans"],
+    upgrade: "Smart Classroom", up: [["Benches", true], ["Projector", false], ["Board", true], ["Speakers", false], ["Fans", true], ["Teacher's desk", true]] }
+];
+var pairIndex = 0, partIndex = 0, order = [];
+var correct = 0, wrong = 0, secondsLeft = 60, timer = null, message = "", good = true;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+
+function shuffle(list) {
+  for (var i = list.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = list[i]; list[i] = list[j]; list[j] = t;
+  }
+  return list;
+}
+
+function intro() {
+  clock.textContent = "60 s";
+  card.innerHTML = '<div class="tag">LECTURE 23 · OPENER</div><h1>Kept or New?</h1>' +
+    '<p>You will see a plain item, then its upgraded version one part at a time.</p>' +
+    '<ul class="rules"><li>Was the part already in the plain item? Tap <b>KEPT</b></li>' +
+    '<li>Is it something the upgrade added? Tap <b>NEW</b></li><li>You have 60 seconds</li></ul>' +
+    '<button class="go" id="start">START</button>';
+  document.getElementById("start").onclick = start;
+}
+
+function start() {
+  order = shuffle(pairs.slice());
+  pairIndex = 0; partIndex = 0; correct = 0; wrong = 0; secondsLeft = 60; message = "";
+  if (timer) clearInterval(timer);
+  timer = setInterval(function () {
+    secondsLeft = secondsLeft - 1;
+    clock.textContent = secondsLeft + " s";
+    if (secondsLeft <= 0) { clearInterval(timer); finish(); }
+  }, 1000);
+  draw();
+}
+
+function draw() {
+  var p = order[pairIndex];
+  var list = "";
+  for (var i = 0; i < p.parts.length; i++) list = list + "<li>" + p.parts[i] + "</li>";
+  card.innerHTML = '<div class="plain"><small>PLAIN ITEM</small><b>' + p.plain + '</b><ul>' + list + '</ul></div>' +
+    '<div class="upgrade"><small>' + p.upgrade.toUpperCase() + ' · PART ' + (partIndex + 1) + ' OF ' + p.up.length + '</small>' +
+    '<div class="part">' + p.up[partIndex][0] + '</div></div>' +
+    '<div class="btns"><button class="btn kept" id="kept">KEPT</button><button class="btn new" id="new">NEW</button></div>' +
+    '<div class="msg ' + (good ? "good" : "bad") + '" id="msg">' + message + '</div>' +
+    '<div class="score"><span>Correct: ' + correct + '</span><span>Wrong: ' + wrong + '</span></div>';
+  if (message === "") document.getElementById("msg").style.background = "transparent";
+  document.getElementById("kept").onclick = function () { answer(true); };
+  document.getElementById("new").onclick = function () { answer(false); };
+}
+
+function answer(saidKept) {
+  var p = order[pairIndex];
+  var part = p.up[partIndex];
+  if (saidKept === part[1]) {
+    correct = correct + 1; good = true;
+    message = part[1] ? "Right — the " + p.plain + " already had it." : "Right — the " + p.upgrade + " added it.";
+  } else {
+    wrong = wrong + 1; good = false;
+    message = part[1] ? "No — " + part[0] + " was already in the " + p.plain + "." : "No — the " + p.plain + " did not have " + part[0] + ".";
+  }
+  partIndex = partIndex + 1;
+  if (partIndex >= p.up.length) {
+    partIndex = 0; pairIndex = pairIndex + 1;
+    if (pairIndex >= order.length) { order = shuffle(pairs.slice()); pairIndex = 0; }
+  }
+  draw();
+}
+
+function finish() {
+  clock.textContent = "0 s";
+  card.innerHTML = '<div class="tag">TIME UP</div><h1>Your score</h1><div class="big">' + correct + ' correct</div>' +
+    '<p style="text-align:center">' + wrong + ' wrong</p>' +
+    '<div class="lesson">Nobody wrote the upgrade from scratch. It KEPT everything the plain item had, then added a few NEW parts. In Python this is called inheritance.</div>' +
+    '<button class="go" id="again">PLAY AGAIN</button>';
+  document.getElementById("again").onclick = start;
+}
+
+intro();
+</script>
+</body>
+</html>

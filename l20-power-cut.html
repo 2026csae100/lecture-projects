@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power Cut — Lecture 20</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); transition:background 0.2s; }
+  body.dark { background:#05080d; }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .card.dark { background:#11161d; color:#8a95a5; }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .boxes { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .box { border-radius:12px; padding:12px; text-align:center; border:2px solid var(--border); background:var(--light); }
+  .box span { display:block; font-size:11px; font-weight:800; letter-spacing:1px; color:#5B6472; }
+  .box b { font-size:34px; color:var(--navy); }
+  .box.saved { background:var(--green-tint); border-color:var(--green); }
+  .box.saved b { color:var(--green); }
+  .queue { min-height:76px; border:2px dashed var(--border); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:#5B6472; margin-bottom:12px; }
+  .queue.waiting { border-color:var(--orange); background:#FDF1E4; color:var(--navy); font-size:30px; }
+  .btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn { border:none; border-radius:12px; padding:18px 10px; font-size:18px; font-weight:800; color:#fff; cursor:pointer; }
+  .sell { background:var(--orange); }
+  .save { background:var(--navy); }
+  .btn:disabled { opacity:0.45; cursor:default; }
+  .bar { height:8px; background:var(--border); border-radius:4px; margin-top:10px; overflow:hidden; }
+  .bar div { height:100%; width:0; background:var(--navy); }
+  .missed { font-size:13px; color:#5B6472; text-align:center; margin-top:8px; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; text-align:center; color:#fff; padding:30px 0 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">POWER <span>CUT</span></div><div class="clock" id="clock">0 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+var faces = ["🧑", "👩", "👨‍🦱", "👧", "🧔", "👵", "👦", "👩‍🦰"];
+var unsaved = 0, saved = 0, missed = 0, saving = false, customer = false;
+var startTime = 0, cutAt = 0, timers = [], tick = null, customerTimer = null;
+
+function showStart() {
+  document.body.className = "";
+  clock.textContent = "0 s";
+  card.className = "card";
+  card.innerHTML = '<div class="tag">LECTURE 20 · FILES</div><h1>Keep the shop\'s sales</h1>' +
+    '<ol class="rules"><li>Customers arrive. Tap <b>SELL</b> before they leave.</li>' +
+    '<li>Sales go on the counter screen first.</li>' +
+    '<li>Tap <b>SAVE</b> to copy them into the notebook. Saving takes 1 second and you cannot sell while saving.</li>' +
+    '<li>At some moment the power goes off. The counter screen is wiped. The notebook is not.</li></ol>' +
+    '<button class="go" onclick="startGame()">OPEN THE SHOP</button>';
+}
+function startGame() {
+  unsaved = 0; saved = 0; missed = 0; saving = false; customer = false;
+  startTime = Date.now();
+  cutAt = 12000 + Math.floor(Math.random() * 16000);   // between 12 and 28 seconds
+  draw();
+  tick = setInterval(function () {
+    var t = Date.now() - startTime;
+    clock.textContent = Math.floor(t / 1000) + " s";
+    if (t >= cutAt) { powerCut(); }
+  }, 100);
+  nextCustomer();
+}
+function nextCustomer() {
+  var wait = 600 + Math.floor(Math.random() * 1000);
+  timers.push(setTimeout(function () {
+    customer = faces[Math.floor(Math.random() * faces.length)];
+    draw();
+    customerTimer = setTimeout(function () {   // customer leaves after 1.8 s
+      if (customer) { customer = false; missed = missed + 1; draw(); }
+      nextCustomer();
+    }, 1800);
+  }, wait));
+}
+function sell() {
+  if (!customer || saving) { return; }
+  customer = false; unsaved = unsaved + 1; draw();
+}
+function save() {
+  if (saving || unsaved === 0) { return; }
+  saving = true; draw();
+  timers.push(setTimeout(function () {
+    saved = saved + unsaved; unsaved = 0; saving = false; draw();
+  }, 1000));
+}
+function draw() {
+  var html = '<div class="boxes"><div class="box"><span>COUNTER SCREEN (NOT SAVED)</span><b>' + unsaved + '</b></div>' +
+    '<div class="box saved"><span>NOTEBOOK (SAVED)</span><b>' + saved + '</b></div></div>';
+  if (customer) { html += '<div class="queue waiting">' + customer + ' wants to buy</div>'; }
+  else { html += '<div class="queue">Waiting for a customer...</div>'; }
+  html += '<div class="btns"><button class="btn sell" onclick="sell()"' + ((!customer || saving) ? ' disabled' : '') + '>SELL</button>' +
+    '<button class="btn save" onclick="save()"' + ((saving || unsaved === 0) ? ' disabled' : '') + '>' + (saving ? 'SAVING...' : 'SAVE') + '</button></div>';
+  html += '<div class="missed">Customers missed: ' + missed + '</div>';
+  card.innerHTML = html;
+}
+function powerCut() {
+  clearInterval(tick);
+  clearTimeout(customerTimer);
+  for (var i = 0; i < timers.length; i++) { clearTimeout(timers[i]); }
+  timers = [];
+  var lost = unsaved;   // a save that had not finished is lost too
+  document.body.className = "dark";
+  card.className = "card dark";
+  card.innerHTML = '<div class="big">⚡ POWER CUT</div>';
+  setTimeout(function () { showResult(lost); }, 1500);
+}
+function showResult(lost) {
+  document.body.className = "";
+  card.className = "card";
+  var html = '<div class="tag">THE LIGHTS ARE BACK</div><h1>' + saved + ' sales kept</h1>';
+  html += '<div class="boxes"><div class="box saved"><span>KEPT (IN THE NOTEBOOK)</span><b>' + saved + '</b></div>' +
+    '<div class="box"><span>LOST (ONLY ON SCREEN)</span><b>' + lost + '</b></div></div>';
+  html += '<p>Customers missed: ' + missed + '</p>';
+  html += '<div class="lesson">The counter screen is like a variable: fast, but wiped when the power (or the program) stops. The notebook is like a file: slower to write, but it survives. Save often enough to keep your work.</div>';
+  html += '<button class="go" onclick="showStart()">PLAY AGAIN</button>';
+  card.innerHTML = html;
+}
+showStart();
+</script>
+</body>
+</html>
