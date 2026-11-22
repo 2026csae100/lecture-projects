@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinema Seats — Lecture 27</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .rules { padding-left:18px; font-size:15px; line-height:1.7; margin:8px 0 12px; }
+  .ask { background:var(--navy); color:#fff; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .ask small { display:block; font-size:11px; font-weight:800; letter-spacing:2px; color:var(--orange-light); margin-bottom:4px; }
+  .ask b { font-size:19px; }
+  .screen { text-align:center; font-size:11px; font-weight:800; letter-spacing:3px; color:#5B6472; border-bottom:4px solid var(--border); border-radius:50% 50% 0 0 / 14px 14px 0 0; padding-bottom:4px; margin:4px 20px 10px; }
+  .hall { display:grid; grid-template-columns:22px repeat(8, 1fr); gap:5px; align-items:center; }
+  .lab { font-size:12px; font-weight:800; color:#5B6472; text-align:center; }
+  .seat { height:32px; border-radius:8px 8px 4px 4px; background:var(--light); border:2px solid var(--border); cursor:pointer; user-select:none; }
+  .seat.on { background:var(--orange); border-color:var(--orange); }
+  .seat.bad { background:var(--red-tint); border-color:var(--red); }
+  .seat.good { background:var(--green); border-color:var(--green); }
+  .row2 { display:flex; gap:10px; margin-top:12px; }
+  .btn { flex:1; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:800; cursor:pointer; color:#fff; background:var(--orange); }
+  .btn.ghost { background:var(--light); color:var(--navy); border:2px solid var(--border); }
+  .msg { min-height:40px; margin-top:10px; border-radius:10px; padding:9px 12px; font-size:14px; font-weight:700; }
+  .msg.good { background:var(--green-tint); color:var(--green); }
+  .msg.bad { background:var(--red-tint); color:var(--red); }
+  .score { display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#5B6472; margin-top:8px; }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin:12px 0; }
+  .big { font-size:40px; font-weight:900; color:var(--navy); text-align:center; margin:6px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">CINEMA <span>SEATS</span></div><div class="clock" id="clock">90 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var ROWS = ["A", "B", "C", "D", "E", "F"];
+var COLS = 8;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+var picked = {}, target = {}, task = null;
+var done = 0, wrong = 0, secondsLeft = 90, timer = null, message = "", good = true;
+
+function rand(n) { return Math.floor(Math.random() * n); }
+function key(r, c) { return r + "-" + c; }
+
+// each task builds the set of seats the customer wants
+function makeTask() {
+  var kind = rand(5);
+  var t = { seats: {} };
+  if (kind === 0) {
+    var r = rand(6), c = rand(8);
+    t.text = "One seat: row " + ROWS[r] + ", seat " + (c + 1);
+    t.seats[key(r, c)] = true;
+  } else if (kind === 1) {
+    var r1 = rand(6);
+    t.text = "A school trip wants the whole of row " + ROWS[r1];
+    for (var c1 = 0; c1 < COLS; c1++) t.seats[key(r1, c1)] = true;
+  } else if (kind === 2) {
+    var c2 = rand(8);
+    t.text = "Seat " + (c2 + 1) + " in every row";
+    for (var r2 = 0; r2 < ROWS.length; r2++) t.seats[key(r2, c2)] = true;
+  } else if (kind === 3) {
+    var ra = rand(4), ca = rand(5);
+    var rb = ra + 1 + rand(2), cb = ca + 1 + rand(3);
+    t.text = "A family: rows " + ROWS[ra] + " to " + ROWS[rb] + ", seats " + (ca + 1) + " to " + (cb + 1);
+    for (var r3 = ra; r3 <= rb; r3++) for (var c3 = ca; c3 <= cb; c3++) t.seats[key(r3, c3)] = true;
+  } else {
+    var r4 = rand(6), start = rand(2);
+    t.text = "Row " + ROWS[r4] + ": every second seat, starting at seat " + (start + 1);
+    for (var c4 = start; c4 < COLS; c4 = c4 + 2) t.seats[key(r4, c4)] = true;
+  }
+  return t;
+}
+
+function intro() {
+  clock.textContent = "90 s";
+  card.innerHTML = '<div class="tag">LECTURE 27 · OPENER</div><h1>Cinema Seats</h1>' +
+    '<p>You run the ticket counter. Customers ask for seats by row letter and seat number.</p>' +
+    '<ul class="rules"><li>Tap the seats each customer asks for</li><li>Tap a seat again to unselect it</li>' +
+    '<li>Press <b>BOOK</b> when the seats are right</li><li>Book as many customers as you can in 90 seconds</li></ul>' +
+    '<button class="go" id="start">START</button>';
+  document.getElementById("start").onclick = start;
+}
+
+function start() {
+  done = 0; wrong = 0; secondsLeft = 90; message = ""; picked = {};
+  task = makeTask();
+  if (timer) clearInterval(timer);
+  timer = setInterval(function () {
+    secondsLeft = secondsLeft - 1;
+    clock.textContent = secondsLeft + " s";
+    if (secondsLeft <= 0) { clearInterval(timer); finish(); }
+  }, 1000);
+  draw();
+}
+
+function draw() {
+  var html = '<div class="ask"><small>CUSTOMER ' + (done + 1) + '</small><b>' + task.text + '</b></div>' +
+    '<div class="screen">SCREEN</div><div class="hall"><div></div>';
+  for (var c = 0; c < COLS; c++) html = html + '<div class="lab">' + (c + 1) + '</div>';
+  for (var r = 0; r < ROWS.length; r++) {
+    html = html + '<div class="lab">' + ROWS[r] + '</div>';
+    for (var c2 = 0; c2 < COLS; c2++) {
+      var on = picked[key(r, c2)] ? " on" : "";
+      html = html + '<div class="seat' + on + '" data-k="' + key(r, c2) + '"></div>';
+    }
+  }
+  html = html + '</div><div class="row2"><button class="btn ghost" id="clear">CLEAR</button><button class="btn" id="book">BOOK</button></div>' +
+    '<div class="msg ' + (good ? "good" : "bad") + '" id="msg">' + message + '</div>' +
+    '<div class="score"><span>Booked: ' + done + '</span><span>Mistakes: ' + wrong + '</span></div>';
+  card.innerHTML = html;
+  if (message === "") document.getElementById("msg").style.background = "transparent";
+  var seats = card.querySelectorAll(".seat");
+  for (var i = 0; i < seats.length; i++) {
+    seats[i].onclick = function () {
+      var k = this.getAttribute("data-k");
+      if (picked[k]) { delete picked[k]; this.classList.remove("on"); }
+      else { picked[k] = true; this.classList.add("on"); }
+    };
+  }
+  document.getElementById("clear").onclick = function () { picked = {}; message = ""; draw(); };
+  document.getElementById("book").onclick = book;
+}
+
+function sameSeats(a, b) {
+  for (var k in a) if (!b[k]) return false;
+  for (var k2 in b) if (!a[k2]) return false;
+  return true;
+}
+
+function book() {
+  if (sameSeats(picked, task.seats)) {
+    done = done + 1; good = true; message = "Booked! " + task.text + ".";
+    task = makeTask(); picked = {};
+    draw();
+  } else {
+    wrong = wrong + 1; good = false; message = "Not quite. Green = right, red = wrong or missed.";
+    draw();
+    var seats = card.querySelectorAll(".seat");
+    for (var i = 0; i < seats.length; i++) {
+      var k = seats[i].getAttribute("data-k");
+      if (task.seats[k] && picked[k]) seats[i].className = "seat good";
+      else if (task.seats[k] || picked[k]) seats[i].className = "seat bad";
+    }
+    picked = {};
+    setTimeout(function () { if (secondsLeft > 0) { message = "Try again: " + task.text; good = false; draw(); } }, 1400);
+  }
+}
+
+function finish() {
+  clock.textContent = "0 s";
+  card.innerHTML = '<div class="tag">TIME UP</div><h1>Your score</h1><div class="big">' + done + ' booked</div>' +
+    '<p style="text-align:center">' + wrong + ' mistakes</p>' +
+    '<div class="lesson">Every seat had an address: a row and a seat number. A whole row, a whole column, a block, every second seat: NumPy picks values out of a table in exactly the same ways.</div>' +
+    '<button class="go" id="again">PLAY AGAIN</button>';
+  document.getElementById("again").onclick = start;
+}
+
+intro();
+</script>
+</body>
+</html>

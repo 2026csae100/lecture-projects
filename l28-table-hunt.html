@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Table Hunt — Lecture 28</title>
+<style>
+  :root { --navy:#1F3A5F; --orange:#E8842C; --orange-light:#F5A25D; --green:#2E7D32; --green-tint:#E8F5E9; --red:#C62828; --red-tint:#FDECEA; --light:#F5F7FA; --border:#D7DEE8; --ink:#2B2B2B; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--navy); min-height:100vh; display:flex; justify-content:center; padding:16px; color:var(--ink); }
+  .app { width:100%; max-width:480px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:6px 2px 14px; }
+  .brand { font-weight:800; letter-spacing:1px; font-size:14px; }
+  .brand span { color:var(--orange-light); }
+  .clock { font-size:14px; font-weight:700; background:rgba(255,255,255,0.12); padding:6px 12px; border-radius:999px; }
+  .card { background:#fff; border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,0.25); }
+  .tag { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--orange); margin-bottom:6px; }
+  h1 { font-size:24px; color:var(--navy); margin-bottom:8px; }
+  p { font-size:15px; line-height:1.55; margin-bottom:10px; }
+  .ask { background:var(--navy); color:#fff; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .ask small { display:block; font-size:11px; font-weight:800; letter-spacing:2px; color:var(--orange-light); margin-bottom:4px; }
+  .ask b { font-size:18px; line-height:1.4; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin-bottom:10px; }
+  th { background:var(--light); color:var(--navy); font-weight:800; padding:6px 4px; border:1px solid var(--border); }
+  td { padding:6px 4px; border:1px solid var(--border); text-align:center; }
+  td.name { font-weight:700; color:var(--navy); text-align:left; background:var(--light); }
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .opt { border:2px solid var(--border); background:#fff; border-radius:12px; padding:12px; font-size:18px; font-weight:800; color:var(--navy); cursor:pointer; }
+  .opt.bad { background:var(--red-tint); border-color:var(--red); color:var(--red); }
+  .go { width:100%; background:var(--orange); color:#fff; border:none; border-radius:12px; padding:15px; font-size:17px; font-weight:800; cursor:pointer; margin-top:10px; }
+  .result { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0; }
+  .result div { background:var(--light); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
+  .result b { display:block; font-size:28px; color:var(--navy); }
+  .result span { font-size:12px; font-weight:700; color:#5B6472; letter-spacing:1px; }
+  .lesson { background:var(--green-tint); color:var(--green); border-radius:12px; padding:12px 14px; font-weight:700; font-size:15px; line-height:1.5; margin-bottom:12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand">TABLE <span>HUNT</span></div><div class="clock" id="clock">0.0 s</div></div>
+  <div class="card" id="card"></div>
+</div>
+<script>
+var names = ["Arjun", "Meera", "Zoya", "Kabir", "Isha", "Dev", "Riya", "Aman"];
+var cols = ["Age", "Maths", "Python", "Attendance"];
+var data = [
+  [18, 72, 88, 91], [19, 85, 64, 78], [18, 93, 95, 88], [20, 58, 71, 66],
+  [19, 77, 82, 95], [18, 66, 59, 83], [20, 81, 90, 74], [19, 69, 76, 87]
+];
+var ORD = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
+var ROUNDS = 5;
+var card = document.getElementById("card");
+var clock = document.getElementById("clock");
+var round = 1, step = 0, startTime = 0, ticking = null, times = [0, 0], wrongs = [0, 0], q = null;
+
+function rand(n) { return Math.floor(Math.random() * n); }
+function shuffle(list) {
+  for (var i = list.length - 1; i > 0; i--) { var j = rand(i + 1); var t = list[i]; list[i] = list[j]; list[j] = t; }
+  return list;
+}
+function newQuestion() {
+  var r = rand(names.length), c = rand(cols.length);
+  var answer = data[r][c];
+  var opts = [answer];
+  while (opts.length < 4) {
+    var v = data[rand(names.length)][rand(cols.length)];
+    if (opts.indexOf(v) < 0) opts.push(v);
+  }
+  return { r: r, c: c, answer: answer, opts: shuffle(opts) };
+}
+function startClock() {
+  startTime = Date.now();
+  ticking = setInterval(function () { clock.textContent = ((Date.now() - startTime) / 1000).toFixed(1) + " s"; }, 100);
+}
+function stopClock() { clearInterval(ticking); return (Date.now() - startTime) / 1000; }
+
+function intro() {
+  clock.textContent = "0.0 s";
+  card.innerHTML = '<div class="tag">LECTURE 28 · OPENER</div><h1>Table Hunt</h1>' +
+    '<p>A table of 8 students. Find the value you are asked for, as fast as you can. Your time is measured.</p>' +
+    '<p><b>Round 1:</b> the table has no names and no column headings. You are told the row and column by position.<br><b>Round 2:</b> the same table, with names and headings.</p>' +
+    '<button class="go" id="go">START ROUND 1</button>';
+  document.getElementById("go").onclick = function () { begin(1); };
+}
+
+function begin(r) {
+  round = r; step = 0; q = newQuestion(); startClock(); draw();
+}
+
+function tableHtml() {
+  var html = '<table>';
+  if (round === 2) {
+    html = html + '<tr><th></th>';
+    for (var c = 0; c < cols.length; c++) html = html + '<th>' + cols[c] + '</th>';
+    html = html + '</tr>';
+  }
+  for (var r = 0; r < names.length; r++) {
+    html = html + '<tr>';
+    if (round === 2) html = html + '<td class="name">' + names[r] + '</td>';
+    for (var c2 = 0; c2 < cols.length; c2++) html = html + '<td>' + data[r][c2] + '</td>';
+    html = html + '</tr>';
+  }
+  return html + '</table>';
+}
+
+function draw() {
+  var text;
+  if (round === 1) text = "The value in the " + ORD[q.r] + " row, " + ORD[q.c] + " column";
+  else text = names[q.r] + "'s " + cols[q.c];
+  var html = '<div class="ask"><small>ROUND ' + round + ' · QUESTION ' + (step + 1) + ' OF ' + ROUNDS + '</small><b>' + text + '</b></div>' + tableHtml() + '<div class="opts">';
+  for (var i = 0; i < q.opts.length; i++) html = html + '<button class="opt" data-v="' + q.opts[i] + '">' + q.opts[i] + '</button>';
+  card.innerHTML = html + '</div>';
+  var buttons = card.querySelectorAll(".opt");
+  for (var k = 0; k < buttons.length; k++) {
+    buttons[k].onclick = function () { pick(this); };
+  }
+}
+
+function pick(btn) {
+  var v = parseInt(btn.getAttribute("data-v"), 10);
+  if (v === q.answer) {
+    step = step + 1;
+    if (step === ROUNDS) {
+      times[round - 1] = stopClock();
+      if (round === 1) middle(); else finish();
+      return;
+    }
+    q = newQuestion(); draw();
+  } else {
+    wrongs[round - 1] = wrongs[round - 1] + 1;
+    btn.className = "opt bad";
+  }
+}
+
+function middle() {
+  card.innerHTML = '<div class="tag">ROUND 1 DONE</div><h1>' + times[0].toFixed(1) + ' seconds</h1>' +
+    '<p>' + wrongs[0] + ' wrong taps.</p><p>Now the same table, with student names on the rows and headings on the columns.</p>' +
+    '<button class="go" id="go">START ROUND 2</button>';
+  document.getElementById("go").onclick = function () { begin(2); };
+}
+
+function finish() {
+  card.innerHTML = '<div class="tag">BOTH ROUNDS DONE</div><h1>' + (times[1] < times[0] ? 'Labels won' : 'Close race!') + '</h1>' +
+    '<div class="result"><div><span>NO LABELS</span><b>' + times[0].toFixed(1) + ' s</b><span>' + wrongs[0] + ' wrong</span></div>' +
+    '<div><span>WITH LABELS</span><b>' + times[1].toFixed(1) + ' s</b><span>' + wrongs[1] + ' wrong</span></div></div>' +
+    '<div class="lesson">Same numbers, but with names on the rows and headings on the columns you can ask for what you mean: "Meera\'s Python". A table like that, in Python, is a pandas DataFrame.</div>' +
+    '<button class="go" id="go">PLAY AGAIN</button>';
+  times = [0, 0]; wrongs = [0, 0];
+  document.getElementById("go").onclick = intro;
+}
+
+intro();
+</script>
+</body>
+</html>
